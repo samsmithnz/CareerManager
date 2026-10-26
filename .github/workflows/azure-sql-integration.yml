@@ -1,0 +1,27 @@
+name: Azure SQL integration tests
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  azure-sql-integration:
+    runs-on: ubuntu-latest
+    env:
+      CAREERMANAGER_TEST_SQL_CONNECTION: ${{ secrets.AZURE_SQL_TEST_CONNECTION_STRING }}
+    steps:
+      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+      - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4.3.1
+        with:
+          dotnet-version-file: global.json
+      - name: Require an isolated Azure SQL test database
+        shell: bash
+        run: |
+          if [ -z "${CAREERMANAGER_TEST_SQL_CONNECTION:-}" ]; then
+            echo "::error::Configure the AZURE_SQL_TEST_CONNECTION_STRING secret with an authorized isolated Azure SQL database before dispatching this workflow."
+            exit 1
+          fi
+      - run: dotnet restore tests/CareerManager.IntegrationTests/CareerManager.IntegrationTests.csproj --locked-mode
+      - run: dotnet test tests/CareerManager.IntegrationTests/CareerManager.IntegrationTests.csproj --configuration Release --no-restore
