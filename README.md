@@ -2,7 +2,7 @@
 
 A private workspace to understand what you’re good at, what work energizes you, and where you want to go next. CareerManager helps you turn that insight into a practical career plan—and, when you’re ready, use your experience to prepare thoughtful, role-specific applications.
 
-**Status:** Planning. This repository does not yet contain an application. The capabilities below describe the intended MVP, not features available today.
+**Status:** The .NET 10 MVC, Azure SQL, and CI foundation is implemented. Authentication and career features are not yet implemented; the current application exposes only the public MVC skeleton.
 
 ## Why this exists
 
@@ -75,15 +75,15 @@ Career information and application history are private data. Security is a core 
 
 ## Technology and hosting
 
-**Requirements:** ASP.NET Core application, hosted in Microsoft Azure.
+The implemented foundation is one ASP.NET Core MVC application targeting .NET 10, Entity Framework Core with the SQL Server provider, and Azure SQL Database. The app is compatible with a single Azure App Service deployment. The initial database model outlines an owner, one profile per owner, and owner-keyed career entries; it does not yet implement authentication or expose career data through endpoints.
 
-The following is a proposed starting point, not a finalized architecture:
+The rest of the MVP remains planned:
 
 | Area | Proposed approach |
 | --- | --- |
-| Application | ASP.NET Core on a supported .NET LTS release, with a server-rendered UI |
+| Application | ASP.NET Core MVC on .NET 10, with a server-rendered UI |
 | Authentication | Established ASP.NET Core-compatible identity provider; provider and MFA approach to be selected |
-| Persistence | Entity Framework Core with Azure SQL Database |
+| Persistence | Entity Framework Core SQL Server provider with Azure SQL Database |
 | Hosting | Azure App Service |
 | Document storage | Private Azure Blob Storage if binary exports require persistent storage |
 | AI-assisted drafting | Provider abstraction kept small; provider, model, region, and data handling to be selected |
@@ -110,9 +110,9 @@ Prefer a single deployable application for the MVP. Avoid microservices and addi
 - Automatic ingestion of every existing document or external profile.
 - A commercial multi-tenant service, billing, or collaboration.
 
-## Decisions before implementation
+## Decisions for later feature work
 
-- **Identity:** Which login provider and MFA policy should protect the initial owner account?
+- **Identity:** Which login provider and MFA policy should protect the initial owner account? Until selected and implemented, no career-data endpoints should be added.
 - **AI:** Which provider/model, Azure region, budget limits, and retention/training policies are acceptable?
 - **Exports:** Which initial downloadable formats are required: PDF, DOCX, or both?
 - **Data lifecycle:** What backup retention, recovery targets, and deletion policy are appropriate?
@@ -121,9 +121,68 @@ The starting proposal is a private, single-owner application. A broader audience
 
 ## Development and deployment
 
-There are no build or run instructions yet because the application has not been scaffolded. The implementation should add local setup instructions, authentication configuration, database migrations, safe sample data, test commands, and deployment instructions as those components land.
+### Prerequisites and environment boundaries
 
-Before the first Azure deployment, the owner will need to provision or authorize an Azure subscription/resource group, an identity application, the selected AI service if used, and GitHub Actions deployment access. Use managed identity or federated credentials where supported rather than long-lived deployment secrets.
+- Install the .NET SDK pinned in [`global.json`](global.json) (10.0.401).
+- Provision or obtain authorization to a **separate synthetic-data Azure SQL development database** and allow the development machine to connect through the Azure SQL firewall. `CareerManager-Dev` or `CareerManager-Development` is the documented database name.
+- Configure Azure SQL connections with encryption and server-certificate validation enabled (`Encrypt=True;TrustServerCertificate=False`).
+- Store the development connection string in .NET User Secrets; do not put it in `appsettings*.json`, source control, or logs:
+
+  ```sh
+  dotnet user-secrets set "ConnectionStrings:CareerManager" "<authorized Azure SQL connection string>" --project src/CareerManager/CareerManager.csproj
+  ```
+
+- Use a different, isolated Azure SQL database named `CareerManager-Test` or `CareerManager-Testing` for database-dependent tests. The test command accepts its connection string only through `CAREERMANAGER_TEST_SQL_CONNECTION`; the integration workflow reads the repository secret `AZURE_SQL_TEST_CONNECTION_STRING`.
+- Production configuration is separate: deploy with `ASPNETCORE_ENVIRONMENT=Production` and provide `ConnectionStrings__CareerManager` through the App Service configuration or an approved secret store. Do not reuse development or test credentials or databases. Provisioning and deployment are part of issue 1.9.
+- For development/test cost, use the Azure SQL Database free offer when eligible; otherwise choose the lowest currently supported General Purpose serverless compute with auto-pause and the smallest suitable storage. Confirm subscription, region, offer limits, and current pricing in the [Azure SQL free offer](https://learn.microsoft.com/azure/azure-sql/database/free-offer?view=azuresql) and [serverless tier documentation](https://learn.microsoft.com/azure/azure-sql/database/serverless-tier-overview?view=azuresql) before provisioning. No Azure resources or credentials are included here.
+- The application fails clearly at startup when `ConnectionStrings:CareerManager` is missing. It does not automatically apply migrations or seed data.
+
+### Restore, build, and run
+
+From the repository root:
+
+```sh
+dotnet restore CareerManager.sln
+dotnet tool restore
+dotnet build CareerManager.sln --configuration Release --no-restore
+dotnet test tests/CareerManager.Tests/CareerManager.Tests.csproj --configuration Release
+dotnet run --project src/CareerManager
+```
+
+The unit tests do not require Azure credentials or a live database. `dotnet run` uses the Development environment from the launch profile and reads the connection string from User Secrets.
+
+### Migrations and synthetic development data
+
+Set `ASPNETCORE_ENVIRONMENT=Development` when running EF commands so the design-time factory can read Development User Secrets. Apply the initial migration only to the authorized development database:
+
+```sh
+dotnet ef database update --project src/CareerManager/CareerManager.csproj --startup-project src/CareerManager/CareerManager.csproj
+```
+
+Synthetic data is opt-in, repeatable, and guarded to the Development environment and a database named `CareerManager-Dev` or `CareerManager-Development`. It is never applied during application startup:
+
+```sh
+CAREERMANAGER_ENABLE_SYNTHETIC_SEED=true dotnet run --project src/CareerManager -- --seed-synthetic
+```
+
+Use `dotnet ef migrations add <MigrationName> --project src/CareerManager/CareerManager.csproj --startup-project src/CareerManager/CareerManager.csproj` to add future migrations.
+
+### Azure SQL integration tests and CI
+
+The integration-test project is intentionally separate from the solution so the normal solution test command remains database-free. Run the database-dependent test explicitly against the isolated `CareerManager-Test` database:
+
+```sh
+CAREERMANAGER_TEST_SQL_CONNECTION="<authorized test database connection string>" \
+  dotnet test tests/CareerManager.IntegrationTests/CareerManager.IntegrationTests.csproj --configuration Release
+```
+
+Source `CAREERMANAGER_TEST_SQL_CONNECTION` from an approved local secret facility; do not put its value in source control or shell history. The integration test fails with a setup message if the connection is missing and rejects database names that are not clearly marked as test. It applies migrations, uses a unique test owner, and deletes that owner's data in a `finally` block. Schema migration history remains in the isolated test database.
+
+The standard GitHub Actions CI restores, builds, audits dependencies, and runs only database-free unit tests; it needs no Azure credentials. To run SQL tests in GitHub Actions, configure the `AZURE_SQL_TEST_CONNECTION_STRING` repository secret for the isolated test database and dispatch the **Azure SQL integration tests** workflow. The workflow fails explicitly when that secret is absent. NuGet audit warnings fail the build, pull requests also run dependency review, and Dependabot checks NuGet and GitHub Actions updates.
+
+No local database, SQLite substitute, or database container is used. The initial capability is only the MVC skeleton and database schema: authentication, ownership enforcement at the application layer, and all career features remain future work. The public landing/privacy pages contain no career data; do not expose private career endpoints until authentication is implemented.
+
+Before Azure deployment, the owner will need to provision or authorize an Azure subscription/resource group, an identity application, the selected AI service if used, and GitHub Actions deployment access. Use managed identity or federated credentials where supported rather than long-lived deployment secrets.
 
 Do not commit real resumes, personal career records, production database copies, or credentials. Use synthetic data in development and tests.
 
