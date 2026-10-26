@@ -2,13 +2,13 @@
 
 A private workspace for turning your experience, strengths, interests, and projects into thoughtful, career plans that can be used to create role-specific job applications.
 
-ResumeManager brings together your career story and your job search. Capture what you are good at, what you have achieved, and what you love working on; then use that evidence alongside a job description and company values to prepare tailored resumes, cover letters, and career planning documents.
+CareerManager brings together your career story and your job search. Capture what you are good at, what you have achieved, and what you love working on; then use that evidence alongside a job description and company values to prepare tailored resumes, cover letters, and career planning documents.
 
 **Status:** Planning. This repository does not yet contain an application. The capabilities below describe the intended MVP, not features available today.
 
 ## Why this exists
 
-A resume rarely captures the full picture: side projects, deep interests, recurring obsessions, lessons learned, and achievements all provide useful evidence of fit. ResumeManager aims to make that information reusable without losing the specifics that make it credible.
+A resume rarely captures the full picture: side projects, deep interests, recurring obsessions, lessons learned, and achievements all provide useful evidence of fit. CareerManager aims to make that information reusable without losing the specifics that make it credible.
 
 The goal is to make relevant experience easier for recruiters and hiring managers to recognize, not to promise interviews or manipulate screening systems.
 
@@ -16,13 +16,13 @@ The goal is to make relevant experience easier for recruiters and hiring manager
 
 ![Venn diagram showing what you are good at, what you like doing, and what makes money overlapping at your career sweet spot.](docs/images/career-sweet-spot.svg)
 
-ResumeManager helps you explore the overlap between your strengths, the work you enjoy, and opportunities that pay. That overlap can guide which roles to pursue, which evidence to highlight, and where to focus your career development.
+CareerManager helps you explore the overlap between your strengths, the work you enjoy, and opportunities that pay. That overlap can guide which roles to pursue, which evidence to highlight, and where to focus your career development.
 
 #### A career-focused lens inspired by ikigai
 
 **Ikigai** is a Japanese concept referring to what makes life feel worth living. It can come from relationships, everyday activities, and interests as well as work; it does not require earning money. The popular four-circle career diagram associated with ikigai is a modern interpretation, not a traditional definition of the concept. It combines what you love, what you are good at, what you can be paid for, and **what the world needs**.
 
-ResumeManager deliberately uses only three circles because its immediate focus is choosing paid roles and preparing credible applications: what you are good at provides evidence of fit, what you like doing guides motivation, and what makes money connects those strengths and interests to paid opportunities. This is a practical career-fit model, not a complete model of purpose or a claim that all meaningful interests should become income.
+CareerManager deliberately uses only three circles because its immediate focus is choosing paid roles and preparing credible applications: what you are good at provides evidence of fit, what you like doing guides motivation, and what makes money connects those strengths and interests to paid opportunities. This is a practical career-fit model, not a complete model of purpose or a claim that all meaningful interests should become income.
 
 Leaving "what the world needs" out of the diagram does not mean impact is unimportant, or that market demand is the same as social value. Consider contribution, company values, and the problems you want to help solve when evaluating individual roles and building your career plan.
 
@@ -131,4 +131,4 @@ Do not commit real resumes, personal career records, production database copies,
 
 ## Planning
 
-The [1.0 MVP epic](https://github.com/samsmithnz/ResumeManager/issues/1) tracks the implementation sequence, acceptance criteria, and unresolved decisions.
+The [1.0 MVP epic](https://github.com/samsmithnz/CareerManager/issues/1) tracks the implementation sequence, acceptance criteria, and unresolved decisions.
