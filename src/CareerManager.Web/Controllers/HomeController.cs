@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using CareerManager.ViewModels;
 using Microsoft.AspNetCore.Mvc;
 using CareerManager.Models;
 
@@ -14,6 +15,11 @@ public class HomeController : Controller
     public IActionResult Privacy()
     {
         return View();
+    }
+
+    public IActionResult Workspace(string? search, string? category, int[]? selectedIds)
+    {
+        return View(EvidenceWorkspacePrototype.Create(search, category, selectedIds));
     }
 
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]

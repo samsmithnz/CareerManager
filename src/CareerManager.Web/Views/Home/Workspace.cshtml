@@ -1,0 +1,224 @@
+@model CareerManager.ViewModels.EvidenceWorkspaceViewModel
+
+@{
+    ViewData["Title"] = "Career evidence";
+}
+
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+    <div>
+        <p class="text-uppercase text-secondary small fw-semibold mb-1">Career profile</p>
+        <h1 class="mb-0">Career evidence</h1>
+    </div>
+    <a class="btn btn-primary" href="#evidence-editor">Add evidence</a>
+</div>
+
+<div class="alert alert-info" role="note">
+    <strong>UI prototype:</strong> every entry below is synthetic. This page does not read or save profile data.
+    Sign-in and owner-scoped persistence must be in place before real evidence can be managed.
+</div>
+
+<section class="card mb-4" aria-labelledby="search-heading">
+    <div class="card-body">
+        <h2 class="h5" id="search-heading">Find evidence</h2>
+        <form asp-controller="Home" asp-action="Workspace" method="get" class="row g-3 align-items-end">
+            <div class="col-md-6">
+                <label class="form-label" for="evidence-search">Search evidence</label>
+                <input class="form-control" id="evidence-search" name="search" value="@Model.Search"
+                       placeholder="Title, context, contribution, outcome, or tag" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label" for="evidence-category">Category</label>
+                <select class="form-select" id="evidence-category" name="category">
+                    <option value="">All categories</option>
+                    @foreach (var category in Model.Categories)
+                    {
+                        <option value="@category" selected="@(Model.Category == category)">@category</option>
+                    }
+                </select>
+            </div>
+            @foreach (var entry in Model.SelectedEntries)
+            {
+                <input type="hidden" name="selectedIds" value="@entry.Id" />
+            }
+            <div class="col-md-2">
+                <button class="btn btn-outline-primary w-100" type="submit">Filter</button>
+            </div>
+            <div class="col-12">
+                <a asp-controller="Home" asp-action="Workspace">Clear search and selection</a>
+            </div>
+        </form>
+    </div>
+</section>
+
+<section class="mb-4" aria-labelledby="selection-heading">
+    <div class="d-flex flex-wrap justify-content-between align-items-baseline gap-2 mb-3">
+        <h2 class="h4 mb-0" id="selection-heading">Select evidence</h2>
+        <span class="text-secondary">@Model.SelectedEntries.Count selected for later comparison</span>
+    </div>
+    <form asp-controller="Home" asp-action="Workspace" method="get">
+        <input type="hidden" name="search" value="@Model.Search" />
+        <input type="hidden" name="category" value="@Model.Category" />
+        @foreach (var selectedEntry in Model.SelectedEntries.Where(selected =>
+            Model.Entries.All(visible => visible.Id != selected.Id)))
+        {
+            <input type="hidden" name="selectedIds" value="@selectedEntry.Id" />
+        }
+        <div class="row g-3">
+            @foreach (var entry in Model.Entries)
+            {
+                var isSelected = Model.SelectedEntries.Any(selected => selected.Id == entry.Id);
+                <div class="col-12">
+                    <article class="card">
+                        <div class="card-body">
+                            <div class="d-flex flex-wrap justify-content-between gap-3">
+                                <div>
+                                    <span class="badge text-bg-light border">@entry.Category</span>
+                                    <h3 class="h5 mt-2 mb-1">@entry.Title</h3>
+                                    @if (entry.StartDate is not null || entry.EndDate is not null)
+                                    {
+                                        <p class="small text-secondary mb-2">
+                                            @if (entry.StartDate is not null)
+                                            {
+                                                @entry.StartDate.Value.ToString("MMM yyyy")
+                                            }
+                                            –
+                                            @if (entry.EndDate is not null)
+                                            {
+                                                @entry.EndDate.Value.ToString("MMM yyyy")
+                                            }
+                                            else
+                                            {
+                                                @:Present
+                                            }
+                                        </p>
+                                    }
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="selectedIds"
+                                           id="select-evidence-@entry.Id" value="@entry.Id" checked="@isSelected" />
+                                    <label class="form-check-label" for="select-evidence-@entry.Id">
+                                        Select for later comparison
+                                    </label>
+                                </div>
+                            </div>
+                            <dl class="row mb-0">
+                                <dt class="col-sm-3">Context</dt>
+                                <dd class="col-sm-9">@entry.Context</dd>
+                                <dt class="col-sm-3">My contribution</dt>
+                                <dd class="col-sm-9">@entry.Contribution</dd>
+                                <dt class="col-sm-3">Outcome</dt>
+                                <dd class="col-sm-9">@entry.Outcome</dd>
+                                @if (entry.Metric is not null)
+                                {
+                                    <dt class="col-sm-3">Metric</dt>
+                                    <dd class="col-sm-9">@entry.Metric</dd>
+                                }
+                                @if (entry.SourceNote is not null || entry.SourceUrl is not null)
+                                {
+                                    <dt class="col-sm-3">Source</dt>
+                                    <dd class="col-sm-9">
+                                        @entry.SourceNote
+                                        @if (entry.SourceUrl is not null)
+                                        {
+                                            <a href="@entry.SourceUrl" rel="noopener noreferrer">@entry.SourceUrl</a>
+                                        }
+                                    </dd>
+                                }
+                                @if (entry.RelatedEntry is not null)
+                                {
+                                    <dt class="col-sm-3">Related evidence</dt>
+                                    <dd class="col-sm-9">@entry.RelatedEntry</dd>
+                                }
+                                <dt class="col-sm-3">Tags</dt>
+                                <dd class="col-sm-9">
+                                    @foreach (var tag in entry.Tags)
+                                    {
+                                        <span class="badge rounded-pill text-bg-secondary me-1">@tag</span>
+                                    }
+                                </dd>
+                            </dl>
+                        </div>
+                    </article>
+                </div>
+            }
+            @if (Model.Entries.Count == 0)
+            {
+                <div class="col-12">
+                    <p class="text-secondary">No synthetic examples match these filters.</p>
+                </div>
+            }
+        </div>
+        @if (Model.Entries.Count > 0)
+        {
+            <button class="btn btn-outline-primary mt-3" type="submit">Update selection</button>
+        }
+    </form>
+</section>
+
+<details class="card" id="evidence-editor">
+    <summary class="card-header">Evidence editor preview</summary>
+    <div class="card-body">
+        <p class="text-secondary">
+            These fields preview the planned evidence form. Saving, editing, and deleting will be enabled after
+            authentication and owner checks are implemented.
+        </p>
+        <form method="post" aria-label="Evidence editor preview">
+            <fieldset disabled>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label" for="editor-category">Category</label>
+                        <select class="form-select" id="editor-category">
+                            @foreach (var category in Model.Categories)
+                            {
+                                <option>@category</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="editor-title">Title</label>
+                        <input class="form-control" id="editor-title" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="editor-start-date">Start date</label>
+                        <input class="form-control" id="editor-start-date" type="date" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="editor-end-date">End date</label>
+                        <input class="form-control" id="editor-end-date" type="date" />
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label" for="editor-context">Context</label>
+                        <textarea class="form-control" id="editor-context" rows="2"></textarea>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label" for="editor-contribution">Personal contribution</label>
+                        <textarea class="form-control" id="editor-contribution" rows="2"></textarea>
+                    </div>
+                    <div class="col-md-8">
+                        <label class="form-label" for="editor-outcome">Outcome</label>
+                        <textarea class="form-control" id="editor-outcome" rows="2"></textarea>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label" for="editor-metric">Optional metric</label>
+                        <input class="form-control" id="editor-metric" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="editor-tags">Tags</label>
+                        <input class="form-control" id="editor-tags" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="editor-source-url">Source URL</label>
+                        <input class="form-control" id="editor-source-url" type="url" />
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label" for="editor-source-note">Source note</label>
+                        <textarea class="form-control" id="editor-source-note" rows="2"></textarea>
+                    </div>
+                    <div class="col-12">
+                        <button class="btn btn-primary" type="submit">Save evidence</button>
+                    </div>
+                </div>
+            </fieldset>
+        </form>
+    </div>
+</details>

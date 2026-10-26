@@ -2,7 +2,7 @@
 
 A private workspace to understand what you’re good at, what work energizes you, and where you want to go next. CareerManager helps you turn that insight into a practical career plan—and, when you’re ready, use your experience to prepare thoughtful, role-specific applications.
 
-**Status:** The .NET 10 MVC, Azure SQL, and CI foundation is implemented. Authentication and career features are not yet implemented; the current application exposes only the public MVC skeleton.
+**Status:** The .NET 10 MVC, Azure SQL, and CI foundation is implemented. A public UI prototype displays synthetic career evidence only; it does not read or save private career data. Authentication and owner-scoped career features remain unimplemented.
 
 ## Why this exists
 
