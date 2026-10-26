@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="620" viewBox="0 0 760 620" role="img" aria-labelledby="title description">
+  <title id="title">Finding your career sweet spot</title>
+  <desc id="description">Three overlapping circles represent what you are good at, what you like doing, and what makes money. Their shared intersection is your career sweet spot.</desc>
+  <rect width="760" height="620" rx="16" fill="#ffffff"/>
+  <g fill-opacity="0.32" stroke-width="3">
+    <circle cx="280" cy="230" r="185" fill="#60a5fa" stroke="#2563eb"/>
+    <circle cx="480" cy="230" r="185" fill="#fbbf24" stroke="#b45309"/>
+    <circle cx="380" cy="400" r="185" fill="#34d399" stroke="#047857"/>
+  </g>
+  <g fill="#172033" font-family="Arial, Helvetica, sans-serif" font-size="25" font-weight="600" text-anchor="middle">
+    <text x="230" y="175">
+      <tspan x="230">What you are</tspan>
+      <tspan x="230" dy="32">good at</tspan>
+    </text>
+    <text x="530" y="175">
+      <tspan x="530">What you like</tspan>
+      <tspan x="530" dy="32">doing</tspan>
+    </text>
+    <text x="380" y="480">
+      <tspan x="380">What makes</tspan>
+      <tspan x="380" dy="32">money</tspan>
+    </text>
+  </g>
+  <g fill="#172033" font-family="Arial, Helvetica, sans-serif" font-size="21" font-weight="700" text-anchor="middle">
+    <text x="380" y="290">
+      <tspan x="380">Career</tspan>
+      <tspan x="380" dy="28">sweet spot</tspan>
+    </text>
+  </g>
+</svg>

@@ -12,6 +12,12 @@ A resume rarely captures the full picture: side projects, deep interests, recurr
 
 The goal is to make relevant experience easier for recruiters and hiring managers to recognize, not to promise interviews or manipulate screening systems.
 
+### Finding your career sweet spot
+
+![Venn diagram showing what you are good at, what you like doing, and what makes money overlapping at your career sweet spot.](docs/images/career-sweet-spot.svg)
+
+ResumeManager helps you explore the overlap between your strengths, the work you enjoy, and opportunities that pay. That overlap can guide which roles to pursue, which evidence to highlight, and where to focus your career development.
+
 ## Core workflow
 
 1. Sign in to your private workspace.
