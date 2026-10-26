@@ -129,7 +129,7 @@ The starting proposal is a private, single-owner application. A broader audience
 - Store the development connection string in .NET User Secrets; do not put it in `appsettings*.json`, source control, or logs:
 
   ```sh
-  dotnet user-secrets set "ConnectionStrings:CareerManager" "<authorized Azure SQL connection string>" --project src/CareerManager/CareerManager.csproj
+  dotnet user-secrets set "ConnectionStrings:CareerManager" "<authorized Azure SQL connection string>" --project src/CareerManager.Web/CareerManager.Web.csproj
   ```
 
 - Use a different, isolated Azure SQL database named `CareerManager-Test` or `CareerManager-Testing` for database-dependent tests. The test command accepts its connection string only through `CAREERMANAGER_TEST_SQL_CONNECTION`; the integration workflow reads the repository secret `AZURE_SQL_TEST_CONNECTION_STRING`.
@@ -146,7 +146,7 @@ dotnet restore CareerManager.sln
 dotnet tool restore
 dotnet build CareerManager.sln --configuration Release --no-restore
 dotnet test tests/CareerManager.Tests/CareerManager.Tests.csproj --configuration Release
-dotnet run --project src/CareerManager
+dotnet run --project src/CareerManager.Web
 ```
 
 The unit tests do not require Azure credentials or a live database. `dotnet run` uses the Development environment from the launch profile and reads the connection string from User Secrets.
@@ -156,16 +156,16 @@ The unit tests do not require Azure credentials or a live database. `dotnet run`
 Set `ASPNETCORE_ENVIRONMENT=Development` when running EF commands so the design-time factory can read Development User Secrets. Apply the initial migration only to the authorized development database:
 
 ```sh
-dotnet ef database update --project src/CareerManager/CareerManager.csproj --startup-project src/CareerManager/CareerManager.csproj
+dotnet ef database update --project src/CareerManager.Web/CareerManager.Web.csproj --startup-project src/CareerManager.Web/CareerManager.Web.csproj
 ```
 
 Synthetic data is opt-in, repeatable, and guarded to the Development environment and a database named `CareerManager-Dev` or `CareerManager-Development`. It is never applied during application startup:
 
 ```sh
-CAREERMANAGER_ENABLE_SYNTHETIC_SEED=true dotnet run --project src/CareerManager -- --seed-synthetic
+CAREERMANAGER_ENABLE_SYNTHETIC_SEED=true dotnet run --project src/CareerManager.Web -- --seed-synthetic
 ```
 
-Use `dotnet ef migrations add <MigrationName> --project src/CareerManager/CareerManager.csproj --startup-project src/CareerManager/CareerManager.csproj` to add future migrations.
+Use `dotnet ef migrations add <MigrationName> --project src/CareerManager.Web/CareerManager.Web.csproj --startup-project src/CareerManager.Web/CareerManager.Web.csproj` to add future migrations.
 
 ### Azure SQL integration tests and CI
 

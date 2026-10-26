@@ -18,7 +18,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\CareerManager\CareerManager.csproj" />
+    <ProjectReference Include="..\..\src\CareerManager.Web\CareerManager.Web.csproj" />
   </ItemGroup>
 
 </Project>

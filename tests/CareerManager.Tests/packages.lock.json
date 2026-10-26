@@ -383,7 +383,7 @@
           "xunit.extensibility.core": "[2.9.3]"
         }
       },
-      "careermanager": {
+      "careermanager.web": {
         "type": "Project",
         "dependencies": {
           "Microsoft.EntityFrameworkCore.SqlServer": "[10.0.14, )"
