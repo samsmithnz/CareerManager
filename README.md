@@ -1,8 +1,6 @@
 # Career Manager
 
-A private workspace for turning your experience, strengths, interests, and projects into thoughtful, career plans that can be used to create role-specific job applications.
-
-CareerManager brings together your career story and your job search. Capture what you are good at, what you have achieved, and what you love working on; then use that evidence alongside a job description and company values to prepare tailored resumes, cover letters, and career planning documents.
+A private workspace to understand what you’re good at, what work energizes you, and where you want to go next. CareerManager helps you turn that insight into a practical career plan—and, when you’re ready, use your experience to prepare thoughtful, role-specific applications.
 
 **Status:** Planning. This repository does not yet contain an application. The capabilities below describe the intended MVP, not features available today.
 
