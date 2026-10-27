@@ -2,7 +2,20 @@
 
 A private workspace to understand what you’re good at, what work energizes you, and where you want to go next. CareerManager helps you turn that insight into a practical career plan—and, when you’re ready, use your experience to prepare thoughtful, role-specific applications.
 
-**Status:** The .NET 10 MVC, Azure SQL, and CI foundation is implemented. A public UI prototype displays synthetic career evidence only; it does not read or save private career data. Authentication and owner-scoped career features remain unimplemented.
+**Status:** The .NET 10 MVC, Azure SQL, and CI foundation is implemented. A public career workspace prototype displays synthetic content only; it does not read or save private career data. Authentication and owner-scoped career features remain unimplemented.
+
+### Career workspace prototype
+
+Visit `/Home/Workspace` to preview four connected areas:
+
+- **Resume:** a professional summary, experience, and skills that tell your selected career story.
+- **Career brag doc:** concrete accomplishments with personal contributions and outcomes; supporting records retain context, optional metrics, tags, and source notes/URLs.
+- **Career development plan:** goals, next actions, milestones, and review points. Plans are intentions, not completed achievements.
+- **Interests & career fit:** reflections on what you are good at, what you like doing, and what makes money, using the three-circle model below. Paid-role examples are ideas to investigate, not verified market demand.
+
+The expandable supporting-evidence browser retains search, category filters, and explicit selection for future comparison. For example: `/Home/Workspace?search=project&category=Work%20experience&selectedIds=1`. Selection is carried only in the page URL; comparison, document editing/import/export, persistence, and AI generation are not implemented. Real data management requires authentication and server-side owner checks first.
+
+![Synthetic career workspace with resume, brag doc, development plan, and three-circle career fit.](docs/images/career-evidence-workspace.png)
 
 ## Why this exists
 

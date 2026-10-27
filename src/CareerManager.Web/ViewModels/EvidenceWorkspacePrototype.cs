@@ -15,8 +15,28 @@ public sealed record EvidencePrototypeEntry(
     string? SourceUrl,
     string? RelatedEntry);
 
+public sealed record ResumePrototype(
+    string Summary,
+    IReadOnlyList<EvidencePrototypeEntry> Experience,
+    IReadOnlyList<string> Skills);
+
+public sealed record DevelopmentPlanPrototype(
+    string Goal,
+    IReadOnlyList<string> Actions,
+    string Milestone,
+    string Review);
+
+public sealed record CareerFitReflection(
+    string Heading,
+    string Prompt,
+    IReadOnlyList<string> Examples);
+
 public sealed class EvidenceWorkspaceViewModel
 {
+    public required ResumePrototype Resume { get; init; }
+    public required IReadOnlyList<EvidencePrototypeEntry> Accomplishments { get; init; }
+    public required DevelopmentPlanPrototype DevelopmentPlan { get; init; }
+    public required IReadOnlyList<CareerFitReflection> CareerFit { get; init; }
     public required IReadOnlyList<string> Categories { get; init; }
     public required IReadOnlyList<EvidencePrototypeEntry> Entries { get; init; }
     public required IReadOnlyList<EvidencePrototypeEntry> SelectedEntries { get; init; }
@@ -151,7 +171,21 @@ public static class EvidenceWorkspacePrototype
             ["personal project", "learning"],
             null,
             null,
-            null)
+            null),
+        new(
+            9,
+            "Achievement",
+            "Mentored a fictional new teammate",
+            null,
+            null,
+            "A synthetic example of welcoming someone to a project.",
+            "Explained the project notes and answered onboarding questions.",
+            "The fictional teammate had a clear starting point.",
+            null,
+            ["mentoring", "communication"],
+            "Synthetic example; no real source.",
+            null,
+            "Fictional delivery coordinator")
     ];
 
     public static EvidenceWorkspaceViewModel Create(
@@ -175,6 +209,31 @@ public static class EvidenceWorkspacePrototype
 
         return new EvidenceWorkspaceViewModel
         {
+            Resume = new ResumePrototype(
+                "A fictional coordinator who helps teams make complex work easier to understand through clear writing, planning, and knowledge sharing.",
+                SampleEntries.Where(entry => entry.Category == "Work experience").ToArray(),
+                ["Technical writing", "Project coordination", "Knowledge sharing"]),
+            Accomplishments = SampleEntries.Where(entry => entry.Category == "Achievement").ToArray(),
+            DevelopmentPlan = new DevelopmentPlanPrototype(
+                "Build confidence presenting technical ideas.",
+                ["Lead a short project demo.", "Ask a teammate for specific feedback."],
+                "Complete two practice demos and collect feedback.",
+                "Review after the next two practice sessions."),
+            CareerFit =
+            [
+                new(
+                    "What you are good at",
+                    "Strengths supported by experience and accomplishments.",
+                    ["Clear writing", "Organizing project work"]),
+                new(
+                    "What you like doing",
+                    "Interests, deep interests, and work that energizes you.",
+                    ["Explaining complex ideas", "Helping teammates learn"]),
+                new(
+                    "What makes money",
+                    "Paid opportunities to investigate, not verified market demand.",
+                    ["Explore technical writing roles", "Explore project coordination roles"])
+            ],
             Categories = CategoryOptions,
             Entries = entries,
             SelectedEntries = SampleEntries.Where(entry => selected.Contains(entry.Id)).ToArray(),

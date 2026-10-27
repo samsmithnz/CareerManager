@@ -1,0 +1,77 @@
+.workspace-heading h1 {
+    color: #172f5f;
+    font-weight: 700;
+}
+
+.workspace-card {
+    border-color: #d7e3f3;
+    border-radius: 0.75rem;
+}
+
+.workspace-card > .card-body {
+    padding: 1.5rem;
+}
+
+.workspace-card h2 {
+    color: #172f5f;
+    font-weight: 700;
+}
+
+.workspace-note {
+    background: #f3f7fd;
+    border-radius: 0.5rem;
+    padding: 0.9rem 1rem;
+}
+
+.workspace-tag {
+    background: #eaf2ff;
+    color: #164b98;
+    border-radius: 1rem;
+    padding: 0.3rem 0.7rem;
+    margin-bottom: 0.4rem;
+    font-size: 0.85rem;
+}
+
+.plan-actions li {
+    padding-bottom: 0.75rem;
+}
+
+.career-venn {
+    display: block;
+    width: 100%;
+    max-width: 22rem;
+    margin: 0 auto 1rem;
+}
+
+.career-fit-reflections {
+    display: grid;
+    gap: 1rem;
+}
+
+.career-fit-reflections ul {
+    padding-left: 1.25rem;
+}
+
+.workspace-flow {
+    border: 1px solid #d7e3f3;
+    background: #f3f7fd;
+    color: #164b98;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    font-size: 0.85rem;
+    text-align: center;
+}
+
+.workspace-flow span {
+    padding: 0 0.4rem;
+}
+
+.supporting-evidence summary {
+    cursor: pointer;
+}
+
+@media (min-width: 1200px) {
+    .career-fit-reflections {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
