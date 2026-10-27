@@ -1,0 +1,288 @@
+@model CareerManager.ViewModels.EvidenceWorkspaceViewModel
+
+@{
+    ViewData["Title"] = "Career workspace";
+}
+
+<header class="workspace-heading mb-4">
+    <p class="text-uppercase text-primary small fw-semibold mb-1">Your career, connected</p>
+    <h1>Career workspace</h1>
+    <p class="text-secondary mb-0">Your career story, evidence, growth plan, and interests in one place.</p>
+</header>
+
+<div class="alert alert-info" role="note">
+    <strong>Prototype view:</strong> sample content only. Nothing is saved.
+    Sign-in and owner checks are required before real career data can be managed.
+</div>
+
+<div class="row g-4 mb-4 workspace-grid">
+    <div class="col-lg-6">
+        <section class="card h-100 workspace-card" aria-labelledby="resume-heading">
+            <div class="card-body">
+                <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+                    <h2 class="h4 mb-0" id="resume-heading">Resume</h2>
+                    <span class="badge rounded-pill text-bg-light border">Career snapshot</span>
+                </div>
+                <h3 class="h6">Professional summary</h3>
+                <p class="text-secondary">@Model.Resume.Summary</p>
+                <h3 class="h6">Experience</h3>
+                @foreach (var entry in Model.Resume.Experience)
+                {
+                    <div class="workspace-note mb-3">
+                        <a class="fw-semibold" href="#evidence-@entry.Id">@entry.Title</a>
+                        <p class="small text-secondary mb-1">
+                            @entry.StartDate?.ToString("MMM yyyy") - @entry.EndDate?.ToString("MMM yyyy")
+                        </p>
+                        <p class="small mb-0">@entry.Contribution</p>
+                    </div>
+                }
+                <h3 class="h6">Skills</h3>
+                <ul class="list-inline mb-0" aria-label="Example resume skills">
+                    @foreach (var skill in Model.Resume.Skills)
+                    {
+                        <li class="list-inline-item workspace-tag">@skill</li>
+                    }
+                </ul>
+            </div>
+        </section>
+    </div>
+    <div class="col-lg-6">
+        <section class="card h-100 workspace-card" aria-labelledby="brag-heading">
+            <div class="card-body">
+                <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                    <h2 class="h4 mb-0" id="brag-heading">Career brag doc</h2>
+                    <span class="badge rounded-pill text-bg-light border">Living record</span>
+                </div>
+                <p class="text-secondary small">Specific accomplishments that support your career story.</p>
+                @foreach (var entry in Model.Accomplishments)
+                {
+                    <article class="workspace-note mb-3">
+                        <h3 class="h6"><a href="#evidence-@entry.Id">@entry.Title</a></h3>
+                        <dl class="small mb-0">
+                            <dt>My contribution</dt>
+                            <dd>@entry.Contribution</dd>
+                            <dt>Outcome</dt>
+                            <dd class="mb-0">@entry.Outcome</dd>
+                        </dl>
+                    </article>
+                }
+                <p class="small text-secondary mb-0">Keep context and sources with each accomplishment. Metrics are optional, never invented.</p>
+            </div>
+        </section>
+    </div>
+    <div class="col-lg-6">
+        <section class="card h-100 workspace-card" aria-labelledby="plan-heading">
+            <div class="card-body">
+                <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+                    <h2 class="h4 mb-0" id="plan-heading">Career development plan</h2>
+                    <span class="badge rounded-pill text-bg-light border">Looking ahead</span>
+                </div>
+                <p class="text-secondary small">Turn your strengths, interests, and gaps into practical next steps.</p>
+                <h3 class="h6">Goal</h3>
+                <p class="workspace-note">@Model.DevelopmentPlan.Goal</p>
+                <h3 class="h6">Next actions</h3>
+                <ol class="plan-actions">
+                    @foreach (var action in Model.DevelopmentPlan.Actions)
+                    {
+                        <li>@action</li>
+                    }
+                </ol>
+                <h3 class="h6">Milestone</h3>
+                <p class="text-secondary">@Model.DevelopmentPlan.Milestone</p>
+                <h3 class="h6">Review point</h3>
+                <p class="text-secondary">@Model.DevelopmentPlan.Review</p>
+                <p class="small text-secondary mb-0">Plans are intentions, not proof of completed work. Record outcomes in your brag doc as they happen.</p>
+            </div>
+        </section>
+    </div>
+    <div class="col-lg-6">
+        <section class="card h-100 workspace-card" aria-labelledby="interests-heading">
+            <div class="card-body">
+                <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                    <h2 class="h4 mb-0" id="interests-heading">Interests &amp; career fit</h2>
+                    <span class="badge rounded-pill text-bg-light border">Three-circle reflection</span>
+                </div>
+                <p class="text-secondary small mb-2">Explore your career sweet spot, without turning every interest into income.</p>
+                <svg class="career-venn" viewBox="0 0 760 620" role="img" aria-labelledby="venn-title venn-description">
+                    <title id="venn-title">Finding your career sweet spot</title>
+                    <desc id="venn-description">What you are good at, what you like doing, and what makes money overlap at your career sweet spot.</desc>
+                    <g fill-opacity="0.32" stroke-width="3">
+                        <circle cx="280" cy="230" r="185" fill="#60a5fa" stroke="#2563eb" />
+                        <circle cx="480" cy="230" r="185" fill="#fbbf24" stroke="#b45309" />
+                        <circle cx="380" cy="400" r="185" fill="#34d399" stroke="#047857" />
+                    </g>
+                    <g fill="#172033" font-size="25" font-weight="600" text-anchor="middle">
+                        <text x="230" y="175"><tspan x="230">What you are</tspan><tspan x="230" dy="32">good at</tspan></text>
+                        <text x="530" y="175"><tspan x="530">What you like</tspan><tspan x="530" dy="32">doing</tspan></text>
+                        <text x="380" y="480"><tspan x="380">What makes</tspan><tspan x="380" dy="32">money</tspan></text>
+                        <text x="380" y="290" font-size="21" font-weight="700"><tspan x="380">Career</tspan><tspan x="380" dy="28">sweet spot</tspan></text>
+                    </g>
+                </svg>
+                <div class="career-fit-reflections">
+                    @foreach (var reflection in Model.CareerFit)
+                    {
+                        <div>
+                            <h3 class="h6">@reflection.Heading</h3>
+                            <p class="small text-secondary mb-1">@reflection.Prompt</p>
+                            <ul class="small mb-0">
+                                @foreach (var example in reflection.Examples)
+                                {
+                                    <li>@example</li>
+                                }
+                            </ul>
+                        </div>
+                    }
+                </div>
+            </div>
+        </section>
+    </div>
+</div>
+
+<aside class="workspace-flow mb-4" aria-label="How the workspace connects">
+    Interests shape goals <span aria-hidden="true">&rarr;</span> Development creates experiences
+    <span aria-hidden="true">&rarr;</span> Brag doc captures outcomes <span aria-hidden="true">&rarr;</span> Resume tells the selected story
+</aside>
+
+<details class="card supporting-evidence" open="@(Model.Search.Length > 0 || Model.Category.Length > 0 || Model.SelectedEntries.Count > 0)">
+<summary class="card-header">Supporting evidence: search and select sample records</summary>
+<div class="card-body">
+<p class="text-secondary small">These underlying records can support your resume and brag doc. Selection is carried only in the page URL; comparison and generation are not implemented.</p>
+<section class="card mb-4" aria-labelledby="search-heading">
+    <div class="card-body">
+        <h2 class="h5" id="search-heading">Find evidence</h2>
+        <form asp-controller="Home" asp-action="Workspace" method="get" class="row g-3 align-items-end">
+            <div class="col-md-6">
+                <label class="form-label" for="evidence-search">Search evidence</label>
+                <input class="form-control" id="evidence-search" name="search" value="@Model.Search"
+                       placeholder="Title, context, contribution, outcome, or tag" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label" for="evidence-category">Category</label>
+                <select class="form-select" id="evidence-category" name="category">
+                    <option value="">All categories</option>
+                    @foreach (var category in Model.Categories)
+                    {
+                        <option value="@category" selected="@(Model.Category == category)">@category</option>
+                    }
+                </select>
+            </div>
+            @foreach (var entry in Model.SelectedEntries)
+            {
+                <input type="hidden" name="selectedIds" value="@entry.Id" />
+            }
+            <div class="col-md-2">
+                <button class="btn btn-outline-primary w-100" type="submit">Filter</button>
+            </div>
+            <div class="col-12">
+                <a asp-controller="Home" asp-action="Workspace">Clear search and selection</a>
+            </div>
+        </form>
+    </div>
+</section>
+
+<section class="mb-4" aria-labelledby="selection-heading">
+    <div class="d-flex flex-wrap justify-content-between align-items-baseline gap-2 mb-3">
+        <h2 class="h4 mb-0" id="selection-heading">Select evidence</h2>
+        <span class="text-secondary">@Model.SelectedEntries.Count selected for later comparison</span>
+    </div>
+    <form asp-controller="Home" asp-action="Workspace" method="get">
+        <input type="hidden" name="search" value="@Model.Search" />
+        <input type="hidden" name="category" value="@Model.Category" />
+        @foreach (var selectedEntry in Model.SelectedEntries.Where(selected =>
+            Model.Entries.All(visible => visible.Id != selected.Id)))
+        {
+            <input type="hidden" name="selectedIds" value="@selectedEntry.Id" />
+        }
+        <div class="row g-3">
+            @foreach (var entry in Model.Entries)
+            {
+                var isSelected = Model.SelectedEntries.Any(selected => selected.Id == entry.Id);
+                <div class="col-12">
+                    <article class="card" id="evidence-@entry.Id">
+                        <div class="card-body">
+                            <div class="d-flex flex-wrap justify-content-between gap-3">
+                                <div>
+                                    <span class="badge text-bg-light border">@entry.Category</span>
+                                    <h3 class="h5 mt-2 mb-1">@entry.Title</h3>
+                                    @if (entry.StartDate is not null || entry.EndDate is not null)
+                                    {
+                                        <p class="small text-secondary mb-2">
+                                            @if (entry.StartDate is not null)
+                                            {
+                                                @entry.StartDate.Value.ToString("MMM yyyy")
+                                            }
+                                            –
+                                            @if (entry.EndDate is not null)
+                                            {
+                                                @entry.EndDate.Value.ToString("MMM yyyy")
+                                            }
+                                            else
+                                            {
+                                                @:Present
+                                            }
+                                        </p>
+                                    }
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="selectedIds"
+                                           id="select-evidence-@entry.Id" value="@entry.Id" checked="@isSelected" />
+                                    <label class="form-check-label" for="select-evidence-@entry.Id">
+                                        Select for later comparison
+                                    </label>
+                                </div>
+                            </div>
+                            <dl class="row mb-0">
+                                <dt class="col-sm-3">Context</dt>
+                                <dd class="col-sm-9">@entry.Context</dd>
+                                <dt class="col-sm-3">My contribution</dt>
+                                <dd class="col-sm-9">@entry.Contribution</dd>
+                                <dt class="col-sm-3">Outcome</dt>
+                                <dd class="col-sm-9">@entry.Outcome</dd>
+                                @if (entry.Metric is not null)
+                                {
+                                    <dt class="col-sm-3">Metric</dt>
+                                    <dd class="col-sm-9">@entry.Metric</dd>
+                                }
+                                @if (entry.SourceNote is not null || entry.SourceUrl is not null)
+                                {
+                                    <dt class="col-sm-3">Source</dt>
+                                    <dd class="col-sm-9">
+                                        @entry.SourceNote
+                                        @if (entry.SourceUrl is not null)
+                                        {
+                                            <a href="@entry.SourceUrl" rel="noopener noreferrer">@entry.SourceUrl</a>
+                                        }
+                                    </dd>
+                                }
+                                @if (entry.RelatedEntry is not null)
+                                {
+                                    <dt class="col-sm-3">Related evidence</dt>
+                                    <dd class="col-sm-9">@entry.RelatedEntry</dd>
+                                }
+                                <dt class="col-sm-3">Tags</dt>
+                                <dd class="col-sm-9">
+                                    @foreach (var tag in entry.Tags)
+                                    {
+                                        <span class="badge rounded-pill text-bg-secondary me-1">@tag</span>
+                                    }
+                                </dd>
+                            </dl>
+                        </div>
+                    </article>
+                </div>
+            }
+            @if (Model.Entries.Count == 0)
+            {
+                <div class="col-12">
+                    <p class="text-secondary">No synthetic examples match these filters.</p>
+                </div>
+            }
+        </div>
+        @if (Model.Entries.Count > 0)
+        {
+            <button class="btn btn-outline-primary mt-3" type="submit">Update selection</button>
+        }
+    </form>
+</section>
+</div>
+</details>
