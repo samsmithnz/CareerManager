@@ -10,12 +10,13 @@ public sealed class AzureOpenAiApplicationGenerationProvider(
     IConfiguration configuration) : IApplicationGenerationProvider
 {
     private const int MaximumResponseBytes = 512 * 1024;
+    private const string SupportedRegion = "eastus2";
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
     private readonly AzureOpenAiOptions _options = AzureOpenAiOptions.FromConfiguration(configuration);
 
     public string ProviderName => "Azure OpenAI";
     public string ModelName => _options.Deployment;
-    public string Region => _options.Region;
+    public string Region => "East US 2 (Virginia)";
     public bool SendsDataExternally => true;
 
     public async Task<ApplicationGenerationResult> GenerateAsync(
@@ -166,17 +167,16 @@ public sealed class AzureOpenAiApplicationGenerationProvider(
                 || !string.IsNullOrWhiteSpace(endpoint.Fragment)
                 || string.IsNullOrWhiteSpace(deployment)
                 || deployment.Length > 128
-                || string.IsNullOrWhiteSpace(region)
-                || region.Length > 80
+                || !string.Equals(region, SupportedRegion, StringComparison.OrdinalIgnoreCase)
                 || string.IsNullOrWhiteSpace(apiKey)
                 || apiKey.Any(char.IsControl))
             {
                 throw new InvalidOperationException(
-                    "Configure a regional Azure OpenAI HTTPS endpoint, deployment, region, and API key before enabling remote generation.");
+                    "Configure an Azure OpenAI HTTPS endpoint, deployment, East US 2 (eastus2) region, and API key before enabling remote generation.");
             }
 
             var baseEndpoint = new Uri(endpoint.GetLeftPart(UriPartial.Authority).TrimEnd('/') + "/");
-            return new AzureOpenAiOptions(baseEndpoint.ToString(), deployment, region, apiKey);
+            return new AzureOpenAiOptions(baseEndpoint.ToString(), deployment, SupportedRegion, apiKey);
         }
     }
 }

@@ -46,7 +46,7 @@ public sealed class AzureOpenAiApplicationGenerationProviderTests
 
         Assert.True(provider.SendsDataExternally);
         Assert.Equal("gpt-4o-mini", provider.ModelName);
-        Assert.Equal("Australia East", provider.Region);
+        Assert.Equal("East US 2 (Virginia)", provider.Region);
         Assert.Equal("synthetic-test-key", submittedKey);
         Assert.Contains("Used SQL for reporting.", submittedBody, StringComparison.Ordinal);
         Assert.DoesNotContain("private notes", submittedBody, StringComparison.Ordinal);
@@ -80,11 +80,25 @@ public sealed class AzureOpenAiApplicationGenerationProviderTests
             {
                 ["ApplicationGeneration:AzureOpenAI:Endpoint"] = "https://career-resource.openai.azure.com",
                 ["ApplicationGeneration:AzureOpenAI:Deployment"] = "gpt-4o-mini",
-                ["ApplicationGeneration:AzureOpenAI:Region"] = "Australia East",
+                ["ApplicationGeneration:AzureOpenAI:Region"] = "eastus2",
                 ["ApplicationGeneration:AzureOpenAI:ApiKey"] = "synthetic-test-key",
                 ["ApplicationGeneration:AzureOpenAI:DataHandlingApproved"] = "true"
             })
             .Build();
+
+    [Fact]
+    public void RemoteProviderRejectsRegionsOutsideTheSelectedEastCoastDeployment()
+    {
+        var settings = CreateConfiguration().AsEnumerable()
+            .ToDictionary(setting => setting.Key, setting => setting.Value);
+        settings["ApplicationGeneration:AzureOpenAI:Region"] = "australiaeast";
+        var configuration = new ConfigurationBuilder().AddInMemoryCollection(settings).Build();
+
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            AzureOpenAiApplicationGenerationProvider.AzureOpenAiOptions.FromConfiguration(configuration));
+
+        Assert.Contains("East US 2", exception.Message, StringComparison.Ordinal);
+    }
 
     private sealed class RecordingHandler(Func<HttpRequestMessage, HttpResponseMessage> responseFactory)
         : HttpMessageHandler

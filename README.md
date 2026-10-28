@@ -101,7 +101,7 @@ The implemented foundation is one ASP.NET Core MVC application targeting .NET 10
 | Authentication | Microsoft identity platform with personal Microsoft accounts; approved-owner sign-in and owner mapping remain open in 1.2 |
 | Structured data | EF Core and Azure SQL Database |
 | Binary exports | Private Azure Blob Storage; PDF and DOCX exports are in issue 1.6 |
-| Application generation | Local deterministic `keyword-overlap-v1` provider by default; optional Azure OpenAI `gpt-4o-mini` deployment in Australia East is disabled until data-handling approval and secure configuration. See [generation defaults](docs/application-generation.md). |
+| Application generation | Local deterministic `keyword-overlap-v1` provider by default; optional Azure OpenAI `gpt-4o-mini` deployment in East US 2 (Virginia) is disabled until data-handling approval and secure configuration. See [generation defaults](docs/application-generation.md). |
 | Production access | App Service managed identity for Azure SQL and Blob Storage |
 | Delivery | GitHub Actions CI is implemented; repeatable Azure provisioning and deployment remain open in 1.9 |
 
@@ -145,7 +145,7 @@ The linked issues are the source of truth for implementation details and accepta
 ## Remaining setup and deferred decisions
 
 - Complete Microsoft identity app registration, redirect URLs, secure credentials, and approved-owner configuration for issue 1.2.
-- Before enabling remote generation, confirm the Azure OpenAI deployment is available in Australia East, review its current data-handling terms, retention/training behavior, and configure provider-side spending limits. Real career data must not be sent until the owner approves those terms and explicitly consents to each request.
+- Before enabling remote generation, confirm the Azure OpenAI deployment is available in East US 2 (Virginia), review its current data-handling terms, retention/training behavior, and configure provider-side spending limits. Real career data must not be sent until the owner approves those terms and explicitly consents to each request.
 - Configure Azure resources and GitHub Actions deployment access for issue 1.9. Use managed identity or federated credentials where supported.
 - Agree on snapshot/history retention and recovery targets only when implementing Phase 2 issue 4. Azure service-managed protections remain separate from application-level recovery features.
 
