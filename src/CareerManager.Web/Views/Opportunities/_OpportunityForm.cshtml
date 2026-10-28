@@ -1,0 +1,70 @@
+@model CareerManager.ViewModels.OpportunityInputModel
+
+<div asp-validation-summary="ModelOnly" class="text-danger" role="alert"></div>
+<div class="mb-3">
+    <label asp-for="Company" class="form-label"></label>
+    <input asp-for="Company" class="form-control" />
+    <span asp-validation-for="Company" class="text-danger"></span>
+</div>
+<div class="mb-3">
+    <label asp-for="Title" class="form-label"></label>
+    <input asp-for="Title" class="form-control" />
+    <span asp-validation-for="Title" class="text-danger"></span>
+</div>
+<div class="mb-3">
+    <label asp-for="JobUrl" class="form-label">Job URL</label>
+    <input asp-for="JobUrl" class="form-control" />
+    <span asp-validation-for="JobUrl" class="text-danger"></span>
+</div>
+<div class="mb-3">
+    <label asp-for="JobDescription" class="form-label"></label>
+    <textarea asp-for="JobDescription" rows="8" class="form-control"></textarea>
+    <span asp-validation-for="JobDescription" class="text-danger"></span>
+</div>
+<div class="mb-3">
+    <label asp-for="CompanyContext" class="form-label">Company values and context</label>
+    <textarea asp-for="CompanyContext" rows="5" class="form-control"></textarea>
+    <span asp-validation-for="CompanyContext" class="text-danger"></span>
+</div>
+<div class="mb-3">
+    <label asp-for="SourceUrls" class="form-label">Source URLs (one per line)</label>
+    <textarea asp-for="SourceUrls" rows="3" class="form-control"></textarea>
+    <span asp-validation-for="SourceUrls" class="text-danger"></span>
+</div>
+<div class="mb-3">
+    <label asp-for="Notes" class="form-label"></label>
+    <textarea asp-for="Notes" rows="4" class="form-control"></textarea>
+    <span asp-validation-for="Notes" class="text-danger"></span>
+</div>
+<div class="row g-3 mb-3">
+    <div class="col-md-6">
+        <label asp-for="Status" class="form-label"></label>
+        <select asp-for="Status" asp-items="Html.GetEnumSelectList<CareerManager.Models.OpportunityStatus>()" class="form-select"></select>
+        <span asp-validation-for="Status" class="text-danger"></span>
+    </div>
+    <div class="col-md-6">
+        <label asp-for="DateFound" class="form-label">Date found</label>
+        <input asp-for="DateFound" type="date" class="form-control" />
+        <span asp-validation-for="DateFound" class="text-danger"></span>
+    </div>
+    <div class="col-md-6">
+        <label asp-for="ApplicationDeadline" class="form-label"></label>
+        <input asp-for="ApplicationDeadline" type="date" class="form-control" />
+        <span asp-validation-for="ApplicationDeadline" class="text-danger"></span>
+    </div>
+    <div class="col-md-6">
+        <label asp-for="SubmissionDate" class="form-label"></label>
+        <input asp-for="SubmissionDate" type="date" class="form-control" />
+        <span asp-validation-for="SubmissionDate" class="text-danger"></span>
+    </div>
+    <div class="col-md-8">
+        <label asp-for="NextActionNotes" class="form-label"></label>
+        <input asp-for="NextActionNotes" class="form-control" />
+        <span asp-validation-for="NextActionNotes" class="text-danger"></span>
+    </div>
+    <div class="col-md-4">
+        <label asp-for="NextActionDate" class="form-label"></label>
+        <input asp-for="NextActionDate" type="date" class="form-control" />
+        <span asp-validation-for="NextActionDate" class="text-danger"></span>
+    </div>
+</div>

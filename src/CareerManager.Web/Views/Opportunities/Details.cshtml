@@ -1,0 +1,33 @@
+@model CareerManager.Models.CareerOpportunity
+
+@{
+    ViewData["Title"] = Model.Title;
+}
+
+<div class="d-flex justify-content-between align-items-start">
+    <div>
+        <h1>@Model.Title</h1>
+        <p class="lead">@Model.Company</p>
+    </div>
+    <div>
+        <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary">Edit</a>
+        <a asp-action="Delete" asp-route-id="@Model.Id" class="btn btn-outline-danger">Delete</a>
+    </div>
+</div>
+
+<dl class="row">
+    <dt class="col-sm-3">Status</dt><dd class="col-sm-9">@Model.Status</dd>
+    <dt class="col-sm-3">Job URL</dt><dd class="col-sm-9">@Model.JobUrl</dd>
+    <dt class="col-sm-3">Date found</dt><dd class="col-sm-9">@Model.DateFound</dd>
+    <dt class="col-sm-3">Application deadline</dt><dd class="col-sm-9">@Model.ApplicationDeadline</dd>
+    <dt class="col-sm-3">Submission date</dt><dd class="col-sm-9">@Model.SubmissionDate</dd>
+    <dt class="col-sm-3">Next action</dt><dd class="col-sm-9">@Model.NextActionNotes</dd>
+    <dt class="col-sm-3">Next action date</dt><dd class="col-sm-9">@Model.NextActionDate</dd>
+    <dt class="col-sm-3">Source URLs</dt><dd class="col-sm-9"><pre class="mb-0">@Model.SourceUrls</pre></dd>
+    <dt class="col-sm-3">Company values and context</dt><dd class="col-sm-9"><pre class="mb-0">@Model.CompanyContext</pre></dd>
+    <dt class="col-sm-3">Notes</dt><dd class="col-sm-9"><pre class="mb-0">@Model.Notes</pre></dd>
+</dl>
+<section class="mt-4">
+    <h2 class="h4">Job description</h2>
+    <pre class="text-wrap">@Model.JobDescription</pre>
+</section>
