@@ -1,0 +1,37 @@
+@model CareerManager.ViewModels.ApplicationDraftIndexViewModel
+
+@{
+    ViewData["Title"] = "Application drafts";
+}
+
+<h1>Application drafts</h1>
+<p>Generated comparisons, resumes, and cover letters are saved as editable drafts only. Review every claim before using it.</p>
+
+@if (Model.Drafts.Count == 0)
+{
+    <p>No saved documents.</p>
+}
+else
+{
+    @foreach (var row in Model.Drafts)
+    {
+        <article class="card mb-3">
+            <div class="card-body">
+                <h2 class="h5">@row.Document.Title</h2>
+                <p class="text-muted">@row.Document.Type draft · Updated @row.Document.UpdatedAtUtc.ToString("u")</p>
+                @if (row.MissingEvidenceCount > 0)
+                {
+                    <p class="alert alert-warning" role="alert">
+                        @row.MissingEvidenceCount referenced evidence item(s) were removed. The saved text is unchanged; review its factual claims.
+                    </p>
+                }
+                @if (row.EvidenceTitles.Count > 0)
+                {
+                    <p>Evidence references: @string.Join(", ", row.EvidenceTitles)</p>
+                }
+                <pre class="text-wrap">@row.Document.Text</pre>
+                <a asp-action="Edit" asp-route-id="@row.Document.Id" class="btn btn-primary">Edit draft</a>
+            </div>
+        </article>
+    }
+}

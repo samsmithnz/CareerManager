@@ -10,6 +10,7 @@ public sealed class CareerManagerContext(DbContextOptions<CareerManagerContext> 
     public DbSet<CareerEntry> CareerEntries => Set<CareerEntry>();
     public DbSet<CareerOpportunity> CareerOpportunities => Set<CareerOpportunity>();
     public DbSet<CareerDocument> CareerDocuments => Set<CareerDocument>();
+    public DbSet<CareerDocumentEvidence> CareerDocumentEvidence => Set<CareerDocumentEvidence>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -76,6 +77,9 @@ public sealed class CareerManagerContext(DbContextOptions<CareerManagerContext> 
             entity.Property(document => document.OwnerId).HasMaxLength(256).IsRequired();
             entity.Property(document => document.Title).HasMaxLength(200).IsRequired();
             entity.Property(document => document.Text).HasMaxLength(12000).IsRequired();
+            entity.Property(document => document.Type).HasConversion<string>().HasMaxLength(20);
+            entity.Property(document => document.ConcurrencyToken).IsConcurrencyToken();
+            entity.HasAlternateKey(document => new { document.OwnerId, document.Id });
             entity.HasOne(document => document.Owner)
                 .WithMany(owner => owner.Documents)
                 .HasForeignKey(document => document.OwnerId)
@@ -85,6 +89,23 @@ public sealed class CareerManagerContext(DbContextOptions<CareerManagerContext> 
                 .HasForeignKey(document => new { document.OwnerId, document.OpportunityId })
                 .HasPrincipalKey(opportunity => new { opportunity.OwnerId, opportunity.Id })
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<CareerDocumentEvidence>(entity =>
+        {
+            entity.HasKey(reference => new
+            {
+                reference.OwnerId,
+                reference.CareerDocumentId,
+                reference.CareerEntryId
+            });
+            entity.Property(reference => reference.OwnerId).HasMaxLength(256).IsRequired();
+            entity.HasOne(reference => reference.Document)
+                .WithMany(document => document.EvidenceReferences)
+                .HasForeignKey(reference => new { reference.OwnerId, reference.CareerDocumentId })
+                .HasPrincipalKey(document => new { document.OwnerId, document.Id })
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasIndex(reference => new { reference.OwnerId, reference.CareerEntryId });
         });
     }
 }

@@ -2,7 +2,7 @@
 
 CareerManager is a private, career-focused workspace for understanding your experience, strengths, interests, and direction. It helps you build a reusable record of your career, explore where you want to go next, and manage opportunities. Role-specific resumes and cover letters are outputs of that broader career work—not the center of the product.
 
-**Status:** The .NET 10 MVC, Azure SQL, and CI foundation (1.1), career evidence workspace (1.3), and opportunity management (1.4) are implemented. Microsoft sign-in and identity mapping (1.2) are still in progress. The career workspace prototype uses synthetic content; private career and opportunity data requires an authenticated, owner-mapped account. Generation, document approval/export, career planning, full-data export/deletion, and Azure deployment remain open MVP work.
+**Status:** The .NET 10 MVC, Azure SQL, and CI foundation (1.1), career evidence workspace (1.3), opportunity management (1.4), and consent-gated role comparisons and draft generation (1.5) are implemented. Microsoft sign-in and identity mapping (1.2) are still in progress. The career workspace prototype uses synthetic content; private career and opportunity data requires an authenticated, owner-mapped account. Document approval/export, career planning, full-data export/deletion, and Azure deployment remain open MVP work.
 
 ### Career workspace prototype
 
@@ -13,7 +13,7 @@ Visit `/Home/Workspace` to preview four connected areas:
 - **Career development plan:** goals, next actions, milestones, and review points. Plans are intentions, not completed achievements.
 - **Interests & career fit:** reflections on what you are good at, what you like doing, and what makes money, using the three-circle model below. Paid-role examples are ideas to investigate, not verified market demand.
 
-The expandable supporting-evidence browser retains search, category filters, and explicit selection for future comparison. For example: `/Home/Workspace?search=project&category=Work%20experience&selectedIds=1`. Prototype selections are carried only in the page URL; comparison, document editing/import/export, and AI generation are not implemented. The career evidence and opportunity management features have owner-scoped persistence, but real data access depends on the Microsoft sign-in and owner mapping work in issue 1.2.
+The expandable supporting-evidence browser retains search, category filters, and explicit selection for the synthetic prototype. For example: `/Home/Workspace?search=project&category=Work%20experience&selectedIds=1`. Prototype selections are carried only in the page URL and remain separate from private data. Owner-scoped role comparison and evidence-based draft generation are available from an opportunity; the prototype itself does not read or save career data.
 
 ![Synthetic career workspace with resume, brag doc, development plan, and three-circle career fit.](docs/images/career-evidence-workspace.png)
 
@@ -63,7 +63,7 @@ Leaving "what the world needs" out of the diagram does not mean impact is unimpo
 - Track roles through saved, preparing, applied, interviewing, offer, rejected, or withdrawn states, including submission date and next-action notes/date.
 - Editing a role does not silently rewrite saved document text. When deleting a role with linked documents, the user chooses whether to save (unlink) or delete those documents.
 
-Opportunity endpoints require authentication and a pre-existing owner record. They return 401 for anonymous requests and 403 when the authenticated principal has no mapped owner record. Saved documents can be linked to an opportunity in the persistence model; document editing and generation are handled by later issues.
+Opportunity and draft endpoints require authentication and a pre-existing owner record. They return 401 for anonymous requests and 403 when the authenticated principal has no mapped owner record. Before generation, the owner previews the role context and explicitly selected evidence, then consents to processing by the configured provider. Remote mode identifies its provider, deployment, and region in the preview; it remains disabled until data-handling terms are approved. Generated comparisons, resumes, and cover letters are editable drafts with evidence references; they are never automatically approved. Editing a role does not silently rewrite saved document text. Deleting an opportunity prompts whether to unlink or delete linked documents. Approval and export UI remain in issue 1.6.
 
 ### Tailored documents and career planning
 
@@ -87,7 +87,7 @@ Career information and application history are private data. Security is a core 
 - Use secure session cookies, HTTPS, and protection against cross-site request forgery.
 - Use encryption at rest through the selected Azure services and managed identity where supported; keep secrets out of source control.
 - Keep resumes, job descriptions, personal data, access tokens, and AI prompts/responses out of application logs.
-- Before AI processing, show what selected evidence and role/company context will leave the application and obtain explicit consent. Choose and approve the provider, region, data-handling terms, and conservative request/spending limits before real-data use.
+- Before generation, show exactly what selected evidence and role/company context will be processed and obtain explicit consent. The default local provider sends nothing externally; the optional remote provider stays disabled until its region, data-handling terms, and provider-side spending limits are reviewed and approved.
 - Treat pasted job descriptions, company text, and model output as untrusted input; never let them override application rules or access other users' data.
 - Implement owner-authorized full-data export and "Delete all my data," including stored exports, with a minimal content-free audit trail. Explain service-backup and provider-copy retention/deletion limitations.
 
@@ -101,7 +101,7 @@ The implemented foundation is one ASP.NET Core MVC application targeting .NET 10
 | Authentication | Microsoft identity platform with personal Microsoft accounts; approved-owner sign-in and owner mapping remain open in 1.2 |
 | Structured data | EF Core and Azure SQL Database |
 | Binary exports | Private Azure Blob Storage; PDF and DOCX exports are in issue 1.6 |
-| AI-assisted drafting | Small provider integration; provider/model, region, data-handling terms, consent, and limits are selected during 1.5 implementation and approved before real-data use |
+| Application generation | Local deterministic `keyword-overlap-v1` provider by default; optional Azure OpenAI `gpt-4o-mini` deployment in East US 2 (Virginia) is disabled until data-handling approval and secure configuration. See [generation defaults](docs/application-generation.md). |
 | Production access | App Service managed identity for Azure SQL and Blob Storage |
 | Delivery | GitHub Actions CI is implemented; repeatable Azure provisioning and deployment remain open in 1.9 |
 
@@ -145,7 +145,7 @@ The linked issues are the source of truth for implementation details and accepta
 ## Remaining setup and deferred decisions
 
 - Complete Microsoft identity app registration, redirect URLs, secure credentials, and approved-owner configuration for issue 1.2.
-- During issue 1.5, select an AI provider/model and deployment region, review its data-handling terms, and configure request/spending limits. Real career data must not be sent until the owner approves those terms and explicitly consents to each request.
+- Before enabling remote generation, confirm the Azure OpenAI deployment is available in East US 2 (Virginia), review its current data-handling terms, retention/training behavior, and configure provider-side spending limits. Real career data must not be sent until the owner approves those terms and explicitly consents to each request.
 - Configure Azure resources and GitHub Actions deployment access for issue 1.9. Use managed identity or federated credentials where supported.
 - Agree on snapshot/history retention and recovery targets only when implementing Phase 2 issue 4. Azure service-managed protections remain separate from application-level recovery features.
 

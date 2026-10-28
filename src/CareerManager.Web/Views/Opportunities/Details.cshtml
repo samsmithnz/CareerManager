@@ -12,6 +12,8 @@
     <div>
         <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary">Edit</a>
         <a asp-action="Delete" asp-route-id="@Model.Id" class="btn btn-outline-danger">Delete</a>
+        <a asp-controller="ApplicationDrafts" asp-action="Compare" asp-route-id="@Model.Id" class="btn btn-success">Compare and generate drafts</a>
+        <a asp-controller="Documents" asp-action="Index" asp-route-opportunityId="@Model.Id" class="btn btn-outline-primary">View saved drafts</a>
     </div>
 </div>
 

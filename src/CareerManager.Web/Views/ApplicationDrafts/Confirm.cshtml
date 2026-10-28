@@ -1,0 +1,68 @@
+@model CareerManager.ViewModels.ApplicationGenerationPreviewViewModel
+
+@{
+    ViewData["Title"] = "Confirm generation";
+}
+
+<h1>Confirm generation</h1>
+<h2 class="h4">@Model.Opportunity.Title at @Model.Opportunity.Company</h2>
+<p>Review exactly what will be processed. No generation request is sent until you confirm below.</p>
+@if (Model.SendsDataExternally)
+{
+    <p class="alert alert-warning" role="alert">
+        This request will send the listed information to @Model.ProviderName using deployment @Model.ModelName in @Model.Region.
+        No other career content is included.
+    </p>
+}
+else
+{
+    <p>This uses the local deterministic provider @Model.ModelName in the application deployment region; nothing is sent to an external AI service.</p>
+}
+
+<section class="mb-4">
+    <h3 class="h5">Role information</h3>
+    <dl>
+        <dt>Company</dt>
+        <dd>@Model.Opportunity.Company</dd>
+        <dt>Role</dt>
+        <dd>@Model.Opportunity.Title</dd>
+        <dt>Job description</dt>
+        <dd><pre class="text-wrap">@Model.Opportunity.JobDescription</pre></dd>
+        <dt>Company context</dt>
+        <dd><pre class="text-wrap">@Model.Opportunity.CompanyContext</pre></dd>
+    </dl>
+</section>
+
+<section class="mb-4">
+    <h3 class="h5">Selected evidence</h3>
+    @if (Model.SelectedEvidence.Count == 0)
+    {
+        <p>No evidence will be processed; the comparison can identify role requirements that need evidence.</p>
+    }
+    @foreach (var entry in Model.SelectedEvidence)
+    {
+        <article class="border rounded p-3 mb-2">
+            <h4 class="h6">@entry.Category: @entry.Title</h4>
+            <p class="mb-0">@entry.Description</p>
+        </article>
+    }
+</section>
+
+<form asp-action="Generate" asp-route-id="@Model.Opportunity.Id" method="post">
+    <div asp-validation-summary="All" class="text-danger" role="alert"></div>
+    <input type="hidden" name="PreviewToken" value="@Model.PreviewToken" />
+    @foreach (var entry in Model.SelectedEvidence)
+    {
+        <input type="hidden" name="SelectedEvidenceIds" value="@entry.Id" />
+    }
+    <div class="form-check mb-3">
+        <input class="form-check-input" type="checkbox" name="Consent" value="true" id="generationConsent"
+               checked="@(Model.Consent ? "checked" : null)" />
+        <label class="form-check-label" for="generationConsent">
+            I reviewed the role context and selected evidence above and consent to processing only those items for this comparison and these drafts.
+        </label>
+    </div>
+    <p class="text-muted">Generated claims remain drafts and must be fact-checked. Evidence references help you review a claim; they do not prove it is true. No content is approved automatically.</p>
+    <button type="submit" class="btn btn-primary">Consent and generate drafts</button>
+    <a asp-action="Compare" asp-route-id="@Model.Opportunity.Id" class="btn btn-secondary">Change selection</a>
+</form>
