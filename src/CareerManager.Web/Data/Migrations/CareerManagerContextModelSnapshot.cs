@@ -30,6 +30,13 @@ namespace CareerManager.Data.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<Guid>("ConcurrencyToken")
+                        .IsConcurrencyToken()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
                     b.Property<int?>("OpportunityId")
                         .HasColumnType("int");
 
@@ -48,11 +55,38 @@ namespace CareerManager.Data.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("datetime2");
+
                     b.HasKey("Id");
 
                     b.HasIndex("OwnerId", "OpportunityId");
 
                     b.ToTable("CareerDocuments");
+                });
+
+            modelBuilder.Entity("CareerManager.Models.CareerDocumentEvidence", b =>
+                {
+                    b.Property<string>("OwnerId")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<int>("CareerDocumentId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("CareerEntryId")
+                        .HasColumnType("int");
+
+                    b.HasKey("OwnerId", "CareerDocumentId", "CareerEntryId");
+
+                    b.HasIndex("OwnerId", "CareerEntryId");
+
+                    b.ToTable("CareerDocumentEvidence");
                 });
 
             modelBuilder.Entity("CareerManager.Models.CareerEntry", b =>
@@ -223,6 +257,18 @@ namespace CareerManager.Data.Migrations
                     b.Navigation("Owner");
                 });
 
+            modelBuilder.Entity("CareerManager.Models.CareerDocumentEvidence", b =>
+                {
+                    b.HasOne("CareerManager.Models.CareerDocument", "Document")
+                        .WithMany("EvidenceReferences")
+                        .HasForeignKey("OwnerId", "CareerDocumentId")
+                        .HasPrincipalKey("OwnerId", "Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Document");
+                });
+
             modelBuilder.Entity("CareerManager.Models.CareerEntry", b =>
                 {
                     b.HasOne("CareerManager.Models.CareerProfile", "Profile")
@@ -255,6 +301,11 @@ namespace CareerManager.Data.Migrations
                         .IsRequired();
 
                     b.Navigation("Owner");
+                });
+
+            modelBuilder.Entity("CareerManager.Models.CareerDocument", b =>
+                {
+                    b.Navigation("EvidenceReferences");
                 });
 
             modelBuilder.Entity("CareerManager.Models.CareerOpportunity", b =>

@@ -13,7 +13,7 @@ Visit `/Home/Workspace` to preview four connected areas:
 - **Career development plan:** goals, next actions, milestones, and review points. Plans are intentions, not completed achievements.
 - **Interests & career fit:** reflections on what you are good at, what you like doing, and what makes money, using the three-circle model below. Paid-role examples are ideas to investigate, not verified market demand.
 
-The expandable supporting-evidence browser retains search, category filters, and explicit selection for future comparison. For example: `/Home/Workspace?search=project&category=Work%20experience&selectedIds=1`. Selection is carried only in the page URL; comparison, document editing/import/export, persistence, and AI generation are not implemented. Real data management requires authentication and server-side owner checks first.
+The expandable supporting-evidence browser retains search, category filters, and explicit selection for the synthetic prototype. For example: `/Home/Workspace?search=project&category=Work%20experience&selectedIds=1`. It remains separate from private data. Owner-scoped role comparison and evidence-based draft generation are available from an opportunity; the prototype itself does not read or save career data.
 
 ![Synthetic career workspace with resume, brag doc, development plan, and three-circle career fit.](docs/images/career-evidence-workspace.png)
 
@@ -63,11 +63,11 @@ Leaving "what the world needs" out of the diagram does not mean impact is unimpo
 - Track roles through saved, preparing, applied, interviewing, offer, rejected, or withdrawn states, including submission date and next-action notes/date.
 - Keep generated drafts, edited versions, and the exact documents used for each application together.
 
-Opportunity endpoints require authentication and a pre-existing owner record. They return 401 for anonymous requests and 403 when the authenticated principal has no mapped owner record. Saved documents can be linked to an opportunity in the persistence model; deleting an opportunity explicitly prompts whether to unlink or delete those documents. Document editing and generation are handled by later issues.
+Opportunity and draft endpoints require authentication and a pre-existing owner record. They return 401 for anonymous requests and 403 when the authenticated principal has no mapped owner record. Before generation, the owner reviews the role context and explicitly selected evidence, then consents to processing by the configured provider. Remote mode identifies its provider, deployment, and region in the preview; it remains disabled until data-handling terms are approved. Generated comparisons, resumes, and cover letters are editable drafts with evidence references; they are never automatically approved. Deleting an opportunity explicitly prompts whether to unlink or delete linked documents. Approval and export UI remain in issue 1.6.
 
 ### Tailored documents and career planning
 
-- Use the career profile, job description, and company context to propose relevant experience and language.
+- Compare only explicitly selected career evidence with the job description and company context; the current local provider uses deterministic keyword matching and preserves evidence text rather than paraphrasing factual claims.
 - Produce a resume and cover letter for each role, with a visible link from factual claims to supporting profile entries.
 - Highlight missing evidence and uncertain matches instead of inventing qualifications, dates, employers, responsibilities, or results.
 - Allow editing and explicit user approval before a document is marked final.
@@ -84,7 +84,7 @@ Career information and application history are private data. Security is a core 
 - Use an established authentication solution, secure session cookies, HTTPS, and protection against cross-site request forgery.
 - Use encryption at rest through the selected Azure services and managed identity where supported; keep secrets out of source control.
 - Keep resumes, job descriptions, personal data, access tokens, and AI prompts/responses out of application logs.
-- Before enabling AI processing, show what data will leave the application and obtain explicit user consent. Provider retention, training use, and deployment-region requirements must be agreed before production use.
+- Before generation, show the role and selected evidence being processed and obtain explicit user consent. The current provider runs locally and sends nothing to an external AI service; a remote provider cannot be enabled until its handling terms, region, and retention/training behavior are reviewed.
 - Treat pasted job descriptions, company text, and model output as untrusted input; never let them override application rules or access other users' data.
 - Provide personal data export and deletion, including generated documents; explain backup retention and deletion limitations.
 
@@ -101,7 +101,7 @@ The rest of the MVP remains planned:
 | Persistence | Entity Framework Core SQL Server provider with Azure SQL Database |
 | Hosting | Azure App Service |
 | Document storage | Private Azure Blob Storage if binary exports require persistent storage |
-| AI-assisted drafting | Provider abstraction kept small; provider, model, region, and data handling to be selected |
+| Application generation | Local deterministic `keyword-overlap-v1` provider by default; optional Azure OpenAI `gpt-4o-mini` deployment in Australia East is disabled until data-handling approval and secure configuration. See [generation defaults](docs/application-generation.md). |
 | Secrets and access | Managed identity and Azure Key Vault where needed |
 | Operations | Azure Monitor/Application Insights with sensitive-data logging disabled |
 | Delivery | GitHub Actions, automated checks, and repeatable Azure infrastructure configuration |
@@ -128,7 +128,7 @@ Prefer a single deployable application for the MVP. Avoid microservices and addi
 ## Decisions for later feature work
 
 - **Identity:** Which login provider and MFA policy should protect the initial owner account? Until selected and implemented, no career-data endpoints should be added.
-- **AI:** Which provider/model, Azure region, budget limits, and retention/training policies are acceptable?
+- **Remote AI:** Confirm the selected Azure OpenAI deployment is available in Australia East and review its current terms, retention/training policies, and spending limits before enabling the optional remote provider.
 - **Exports:** Which initial downloadable formats are required: PDF, DOCX, or both?
 - **Data lifecycle:** What backup retention, recovery targets, and deletion policy are appropriate?
 

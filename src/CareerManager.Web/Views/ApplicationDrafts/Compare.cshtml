@@ -1,0 +1,58 @@
+@model CareerManager.ViewModels.ApplicationComparisonViewModel
+
+@{
+    ViewData["Title"] = "Compare role and evidence";
+}
+
+<h1>Compare role and evidence</h1>
+<h2 class="h4">@Model.Opportunity.Title at @Model.Opportunity.Company</h2>
+<p>Review the exact role context and evidence below. Only this role description, company context, and evidence you select are processed.</p>
+@if (Model.SendsDataExternally)
+{
+    <p class="alert alert-warning" role="alert">
+        This request will send the listed information to @Model.ProviderName using deployment @Model.ModelName in @Model.Region.
+        No other career content is included.
+    </p>
+}
+else
+{
+    <p>This uses the local deterministic provider @Model.ModelName in the application deployment region; nothing is sent to an external AI service.</p>
+}
+
+<section class="mb-4">
+    <h3 class="h5">Role information to be processed</h3>
+    <dl>
+        <dt>Company</dt>
+        <dd>@Model.Opportunity.Company</dd>
+        <dt>Role</dt>
+        <dd>@Model.Opportunity.Title</dd>
+        <dt>Job description</dt>
+        <dd><pre class="text-wrap">@Model.Opportunity.JobDescription</pre></dd>
+        <dt>Company context</dt>
+        <dd><pre class="text-wrap">@Model.Opportunity.CompanyContext</pre></dd>
+    </dl>
+</section>
+
+<form asp-action="Preview" asp-route-id="@Model.Opportunity.Id" method="post">
+    <div asp-validation-summary="All" class="text-danger" role="alert"></div>
+    <fieldset class="mb-3">
+        <legend class="h5">Select the evidence to process</legend>
+        @if (Model.AvailableEvidence.Count == 0)
+        {
+            <p>No saved evidence is available. You can still compare the role and receive evidence-gap questions.</p>
+        }
+        @foreach (var entry in Model.AvailableEvidence)
+        {
+            <div class="form-check border rounded p-3 mb-2">
+                <input class="form-check-input" type="checkbox" name="SelectedEvidenceIds" value="@entry.Id"
+                       id="evidence-@entry.Id" checked="@(Model.SelectedEvidenceIds.Contains(entry.Id) ? "checked" : null)" />
+                <label class="form-check-label" for="evidence-@entry.Id">
+                    <strong>@entry.Category: @entry.Title</strong>
+                    <span class="d-block">@entry.Description</span>
+                </label>
+            </div>
+        }
+    </fieldset>
+    <button type="submit" class="btn btn-primary">Review selected data</button>
+    <a asp-controller="Opportunities" asp-action="Details" asp-route-id="@Model.Opportunity.Id" class="btn btn-secondary">Cancel</a>
+</form>
