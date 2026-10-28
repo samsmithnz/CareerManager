@@ -2,7 +2,7 @@
 
 A private workspace to understand what you’re good at, what work energizes you, and where you want to go next. CareerManager helps you turn that insight into a practical career plan—and, when you’re ready, use your experience to prepare thoughtful, role-specific applications.
 
-**Status:** The .NET 10 MVC, Azure SQL, and CI foundation is implemented. A public career workspace prototype displays synthetic content only; it does not read or save private career data. Authentication and owner-scoped career features remain unimplemented.
+**Status:** The .NET 10 MVC, Azure SQL, and CI foundation is implemented. Opportunity CRUD and owner-scoped persistence are available only to an authenticated owner with a mapped `career_owner_id` claim and an existing owner record. Microsoft sign-in and identity mapping remain part of issue 1.2 and are not configured yet. The public career workspace prototype still displays synthetic content only.
 
 ### Career workspace prototype
 
@@ -58,10 +58,12 @@ Leaving "what the world needs" out of the diagram does not mean impact is unimpo
 
 ### Roles and applications
 
-- Create a role record with company, title, job URL, job description, company values, notes, and important dates.
+- Create, edit, filter, and delete an owner-scoped role record with company, title, job URL, pasted job description, company values/context, source URLs, notes, and important dates.
 - Start with manually entered or pasted job descriptions and company context; retain source URLs when available.
-- Track roles through saved, preparing, applied, interviewing, offer, rejected, or withdrawn states.
+- Track roles through saved, preparing, applied, interviewing, offer, rejected, or withdrawn states, including submission date and next-action notes/date.
 - Keep generated drafts, edited versions, and the exact documents used for each application together.
+
+Opportunity endpoints require authentication and a pre-existing owner record. They return 401 for anonymous requests and 403 when the authenticated principal has no mapped owner record. Saved documents can be linked to an opportunity in the persistence model; deleting an opportunity explicitly prompts whether to unlink or delete those documents. Document editing and generation are handled by later issues.
 
 ### Tailored documents and career planning
 
@@ -88,7 +90,7 @@ Career information and application history are private data. Security is a core 
 
 ## Technology and hosting
 
-The implemented foundation is one ASP.NET Core MVC application targeting .NET 10, Entity Framework Core with the SQL Server provider, and Azure SQL Database. The app is compatible with a single Azure App Service deployment. The initial database model outlines an owner, one profile per owner, and owner-keyed career entries; it does not yet implement authentication or expose career data through endpoints.
+The implemented foundation is one ASP.NET Core MVC application targeting .NET 10, Entity Framework Core with the SQL Server provider, and Azure SQL Database. The app is compatible with a single Azure App Service deployment. The database model includes an owner, career profiles and entries, owner-keyed opportunities, and saved documents with an optional owner-validated opportunity relationship. Opportunity endpoints are protected by authentication and owner checks; the Microsoft OpenID Connect sign-in, owner mapping, and provisioning setup remains outstanding under issue 1.2.
 
 The rest of the MVP remains planned:
 
@@ -193,7 +195,7 @@ Source `CAREERMANAGER_TEST_SQL_CONNECTION` from an approved local secret facilit
 
 The standard GitHub Actions CI restores, builds, audits dependencies, and runs only database-free unit tests; it needs no Azure credentials. To run SQL tests in GitHub Actions, configure the `AZURE_SQL_TEST_CONNECTION_STRING` repository secret for the isolated test database and dispatch the **Azure SQL integration tests** workflow. The workflow fails explicitly when that secret is absent. NuGet audit warnings fail the build, pull requests also run dependency review, and Dependabot checks NuGet and GitHub Actions updates.
 
-No local database, SQLite substitute, or database container is used. The initial capability is only the MVC skeleton and database schema: authentication, ownership enforcement at the application layer, and all career features remain future work. The public landing/privacy pages contain no career data; do not expose private career endpoints until authentication is implemented.
+No local database, SQLite substitute, or database container is used. The public landing/privacy pages and career-workspace prototype do not expose private career data. Opportunity endpoints fail closed until the identity integration maps an authenticated configured owner to `career_owner_id` and that owner exists in the database. Do not configure production access until issue 1.2's Microsoft identity setup and owner mapping are complete.
 
 Before Azure deployment, the owner will need to provision or authorize an Azure subscription/resource group, an identity application, the selected AI service if used, and GitHub Actions deployment access. Use managed identity or federated credentials where supported rather than long-lived deployment secrets.
 

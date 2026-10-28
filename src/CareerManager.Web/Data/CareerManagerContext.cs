@@ -8,6 +8,8 @@ public sealed class CareerManagerContext(DbContextOptions<CareerManagerContext> 
     public DbSet<CareerOwner> CareerOwners => Set<CareerOwner>();
     public DbSet<CareerProfile> CareerProfiles => Set<CareerProfile>();
     public DbSet<CareerEntry> CareerEntries => Set<CareerEntry>();
+    public DbSet<CareerOpportunity> CareerOpportunities => Set<CareerOpportunity>();
+    public DbSet<CareerDocument> CareerDocuments => Set<CareerDocument>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -45,6 +47,44 @@ public sealed class CareerManagerContext(DbContextOptions<CareerManagerContext> 
                 .HasForeignKey(entry => new { entry.OwnerId, entry.ProfileId })
                 .HasPrincipalKey(profile => new { profile.OwnerId, profile.Id })
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<CareerOpportunity>(entity =>
+        {
+            entity.HasKey(opportunity => opportunity.Id);
+            entity.Property(opportunity => opportunity.OwnerId).HasMaxLength(256).IsRequired();
+            entity.Property(opportunity => opportunity.Company).HasMaxLength(200).IsRequired();
+            entity.Property(opportunity => opportunity.Title).HasMaxLength(200).IsRequired();
+            entity.Property(opportunity => opportunity.JobUrl).HasMaxLength(2048);
+            entity.Property(opportunity => opportunity.JobDescription).HasMaxLength(12000);
+            entity.Property(opportunity => opportunity.CompanyContext).HasMaxLength(8000);
+            entity.Property(opportunity => opportunity.SourceUrls).HasMaxLength(4000);
+            entity.Property(opportunity => opportunity.Notes).HasMaxLength(8000);
+            entity.Property(opportunity => opportunity.NextActionNotes).HasMaxLength(2000);
+            entity.Property(opportunity => opportunity.Status).HasConversion<string>().HasMaxLength(20);
+            entity.HasAlternateKey(opportunity => new { opportunity.OwnerId, opportunity.Id });
+            entity.HasIndex(opportunity => new { opportunity.OwnerId, opportunity.Status });
+            entity.HasOne(opportunity => opportunity.Owner)
+                .WithMany(owner => owner.Opportunities)
+                .HasForeignKey(opportunity => opportunity.OwnerId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<CareerDocument>(entity =>
+        {
+            entity.HasKey(document => document.Id);
+            entity.Property(document => document.OwnerId).HasMaxLength(256).IsRequired();
+            entity.Property(document => document.Title).HasMaxLength(200).IsRequired();
+            entity.Property(document => document.Text).HasMaxLength(12000).IsRequired();
+            entity.HasOne(document => document.Owner)
+                .WithMany(owner => owner.Documents)
+                .HasForeignKey(document => document.OwnerId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(document => document.Opportunity)
+                .WithMany(opportunity => opportunity.Documents)
+                .HasForeignKey(document => new { document.OwnerId, document.OpportunityId })
+                .HasPrincipalKey(opportunity => new { opportunity.OwnerId, opportunity.Id })
+                .OnDelete(DeleteBehavior.Restrict);
         });
     }
 }

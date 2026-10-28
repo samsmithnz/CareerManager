@@ -1,0 +1,81 @@
+@model CareerManager.ViewModels.OpportunityIndexViewModel
+
+@{
+    ViewData["Title"] = "Opportunities";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1>Opportunities</h1>
+    <a class="btn btn-primary" asp-action="Create">Add opportunity</a>
+</div>
+
+<div asp-validation-summary="All" class="text-danger" role="alert"></div>
+<form asp-action="Index" method="get" class="row g-3 mb-4">
+    <div class="col-md-6">
+        <label for="search" class="form-label">Company or title</label>
+        <input id="search" name="search" value="@Model.Search" class="form-control" />
+    </div>
+    <div class="col-md-4">
+        <label for="status" class="form-label">Status</label>
+        <select id="status" name="status" class="form-select">
+            <option value="">All statuses</option>
+            @foreach (var status in Enum.GetValues<CareerManager.Models.OpportunityStatus>())
+            {
+                if (Model.Status == status)
+                {
+                    <option value="@status" selected>@status</option>
+                }
+                else
+                {
+                    <option value="@status">@status</option>
+                }
+            }
+        </select>
+    </div>
+    <div class="col-md-2 d-flex align-items-end">
+        <button type="submit" class="btn btn-outline-primary">Filter</button>
+    </div>
+</form>
+
+@if (Model.Opportunities.Count == 0)
+{
+    <p>No opportunities match these filters.</p>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table align-middle">
+            <thead>
+                <tr>
+                    <th scope="col">Company</th>
+                    <th scope="col">Title</th>
+                    <th scope="col">Status</th>
+                    <th scope="col">Next action</th>
+                    <th scope="col"><span class="visually-hidden">Actions</span></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var opportunity in Model.Opportunities)
+                {
+                    <tr>
+                        <td>@opportunity.Company</td>
+                        <td>@opportunity.Title</td>
+                        <td>@opportunity.Status</td>
+                        <td>
+                            @opportunity.NextActionNotes
+                            @if (opportunity.NextActionDate.HasValue)
+                            {
+                                <span>(@opportunity.NextActionDate.Value.ToString("yyyy-MM-dd"))</span>
+                            }
+                        </td>
+                        <td class="text-nowrap">
+                            <a asp-action="Details" asp-route-id="@opportunity.Id">View</a> |
+                            <a asp-action="Edit" asp-route-id="@opportunity.Id">Edit</a> |
+                            <a asp-action="Delete" asp-route-id="@opportunity.Id">Delete</a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

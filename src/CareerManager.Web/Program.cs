@@ -1,12 +1,13 @@
 using CareerManager.Data;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var seedSyntheticData = args.Length == 1 && args[0] == "--seed-synthetic";
-if (args.Length > 0 && !seedSyntheticData)
+var seedSyntheticData = args.Contains("--seed-synthetic", StringComparer.Ordinal);
+if (seedSyntheticData && args.Any(argument => argument != "--seed-synthetic"))
 {
-    throw new InvalidOperationException("The only supported command is --seed-synthetic.");
+    throw new InvalidOperationException("--seed-synthetic cannot be combined with other application arguments.");
 }
 
 if (seedSyntheticData)
@@ -29,6 +30,27 @@ if (seedSyntheticData)
 var connectionString = DatabaseConfiguration.GetRequiredConnectionString(builder.Configuration);
 builder.Services.AddDbContext<CareerManagerContext>(options => options.UseSqlServer(connectionString));
 builder.Services.AddControllersWithViews();
+builder.Services
+    .AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+    .AddCookie(options =>
+    {
+        options.Cookie.Name = "CareerManager.Session";
+        options.Cookie.HttpOnly = true;
+        options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+        options.Cookie.SameSite = SameSiteMode.Lax;
+        options.SlidingExpiration = false;
+        options.Events.OnRedirectToLogin = context =>
+        {
+            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+            return Task.CompletedTask;
+        };
+        options.Events.OnRedirectToAccessDenied = context =>
+        {
+            context.Response.StatusCode = StatusCodes.Status403Forbidden;
+            return Task.CompletedTask;
+        };
+    });
+builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
@@ -51,6 +73,7 @@ if (!app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseRouting();
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapStaticAssets();
@@ -62,3 +85,5 @@ app.MapControllerRoute(
 
 
 await app.RunAsync();
+
+public partial class Program { }
