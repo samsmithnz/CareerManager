@@ -1,25 +1,25 @@
-# Career Manager
+# CareerManager
 
-A private workspace to understand what you’re good at, what work energizes you, and where you want to go next. CareerManager helps you turn that insight into a practical career plan—and, when you’re ready, use your experience to prepare thoughtful, role-specific applications.
+CareerManager is a private, career-focused workspace for understanding your experience, strengths, interests, and direction. It helps you build a reusable record of your career, explore where you want to go next, and manage opportunities. Role-specific resumes and cover letters are outputs of that broader career work—not the center of the product.
 
-**Status:** The .NET 10 MVC, Azure SQL, and CI foundation is implemented. Opportunity CRUD and owner-scoped persistence are available only to an authenticated owner with a mapped `career_owner_id` claim and an existing owner record. Microsoft sign-in and identity mapping remain part of issue 1.2 and are not configured yet. The public career workspace prototype still displays synthetic content only.
+**Status:** The .NET 10 MVC, Azure SQL, and CI foundation (1.1), career evidence workspace (1.3), opportunity management (1.4), and consent-gated role comparisons and draft generation (1.5) are implemented. Microsoft sign-in and identity mapping (1.2) are still in progress. The career workspace prototype uses synthetic content; private career and opportunity data requires an authenticated, owner-mapped account. Document approval/export, career planning, full-data export/deletion, and Azure deployment remain open MVP work.
 
 ### Career workspace prototype
 
 Visit `/Home/Workspace` to preview four connected areas:
 
-- **Resume:** a professional summary, experience, and skills that tell your selected career story.
+- **Resume preview:** one possible role-specific output from your broader career evidence.
 - **Career brag doc:** concrete accomplishments with personal contributions and outcomes; supporting records retain context, optional metrics, tags, and source notes/URLs.
 - **Career development plan:** goals, next actions, milestones, and review points. Plans are intentions, not completed achievements.
 - **Interests & career fit:** reflections on what you are good at, what you like doing, and what makes money, using the three-circle model below. Paid-role examples are ideas to investigate, not verified market demand.
 
-The expandable supporting-evidence browser retains search, category filters, and explicit selection for the synthetic prototype. For example: `/Home/Workspace?search=project&category=Work%20experience&selectedIds=1`. It remains separate from private data. Owner-scoped role comparison and evidence-based draft generation are available from an opportunity; the prototype itself does not read or save career data.
+The expandable supporting-evidence browser retains search, category filters, and explicit selection for the synthetic prototype. For example: `/Home/Workspace?search=project&category=Work%20experience&selectedIds=1`. Prototype selections are carried only in the page URL and remain separate from private data. Owner-scoped role comparison and evidence-based draft generation are available from an opportunity; the prototype itself does not read or save career data.
 
 ![Synthetic career workspace with resume, brag doc, development plan, and three-circle career fit.](docs/images/career-evidence-workspace.png)
 
 ## Why this exists
 
-A resume rarely captures the full picture: side projects, deep interests, recurring obsessions, lessons learned, and achievements all provide useful evidence of fit. CareerManager aims to make that information reusable without losing the specifics that make it credible.
+A resume is a narrow, role-specific summary—not a complete career record. Side projects, deep interests, recurring obsessions, lessons learned, and achievements all provide useful evidence of fit. CareerManager makes that information reusable without losing the specifics that make it credible.
 
 The goal is to make relevant experience easier for recruiters and hiring managers to recognize, not to promise interviews or manipulate screening systems.
 
@@ -33,80 +33,96 @@ CareerManager helps you explore the overlap between your strengths, the work you
 
 **Ikigai** is a Japanese concept referring to what makes life feel worth living. It can come from relationships, everyday activities, and interests as well as work; it does not require earning money. The popular four-circle career diagram associated with ikigai is a modern interpretation, not a traditional definition of the concept. It combines what you love, what you are good at, what you can be paid for, and **what the world needs**.
 
-CareerManager deliberately uses only three circles because its immediate focus is choosing paid roles and preparing credible applications: what you are good at provides evidence of fit, what you like doing guides motivation, and what makes money connects those strengths and interests to paid opportunities. This is a practical career-fit model, not a complete model of purpose or a claim that all meaningful interests should become income.
+CareerManager deliberately uses only three circles as a practical lens for career exploration: what you are good at provides evidence of fit, what you like doing guides motivation, and what makes money connects those strengths and interests to paid opportunities. This is not a complete model of purpose or a claim that all meaningful interests should become income.
 
 Leaving "what the world needs" out of the diagram does not mean impact is unimportant, or that market demand is the same as social value. Consider contribution, company values, and the problems you want to help solve when evaluating individual roles and building your career plan.
 
 ## Core workflow
 
 1. Sign in to your private workspace.
-2. Build a reusable career profile with experience, skills, strengths, interests, achievements, and side projects.
-3. Add a role, its job description, and relevant company values or context.
-4. Compare the opportunity with your evidence, identifying strengths, gaps, and questions.
-5. Generate and edit a tailored resume and cover letter, reviewing the evidence behind the suggestions.
-6. Save the application version, export the documents, and track the role through the hiring process.
-7. Use recurring strengths, interests, and gaps to maintain a simple career plan.
+2. Build a reusable career profile with experience, education, skills, strengths, interests, achievements, and side projects.
+3. Explore career fit and maintain goals and next steps in a career plan.
+4. Add an opportunity, its job description, and relevant company values or context.
+5. Compare the role with explicitly selected evidence, identifying supported matches, gaps, and questions.
+6. With consent, generate and edit draft application documents, such as a tailored resume and cover letter, reviewing the evidence behind factual claims.
+7. Review and approve the current documents, export them as PDF or DOCX, and track the opportunity and next actions.
 
 ## MVP scope
 
 ### Career knowledge base
 
-- Capture work experience, education, skills, strengths, interests, deep interests/obsessions, successes, and side projects.
+- Capture work experience, education, skills, strengths, interests/deep interests, achievements, and side projects.
 - Record achievements with context, your contribution, outcomes, and optional measurable results.
 - Attach evidence references such as project URLs and source notes; tag entries for reuse.
-- Edit and remove entries as your career evolves.
+- Search, filter, edit, and remove entries as your career evolves. Missing metrics remain missing; the application does not invent results.
 
 ### Roles and applications
 
 - Create, edit, filter, and delete an owner-scoped role record with company, title, job URL, pasted job description, company values/context, source URLs, notes, and important dates.
 - Start with manually entered or pasted job descriptions and company context; retain source URLs when available.
 - Track roles through saved, preparing, applied, interviewing, offer, rejected, or withdrawn states, including submission date and next-action notes/date.
-- Keep generated drafts, edited versions, and the exact documents used for each application together.
+- Editing a role does not silently rewrite saved document text. When deleting a role with linked documents, the user chooses whether to save (unlink) or delete those documents.
 
-Opportunity and draft endpoints require authentication and a pre-existing owner record. They return 401 for anonymous requests and 403 when the authenticated principal has no mapped owner record. Before generation, the owner reviews the role context and explicitly selected evidence, then consents to processing by the configured provider. Remote mode identifies its provider, deployment, and region in the preview; it remains disabled until data-handling terms are approved. Generated comparisons, resumes, and cover letters are editable drafts with evidence references; they are never automatically approved. Deleting an opportunity explicitly prompts whether to unlink or delete linked documents. Approval and export UI remain in issue 1.6.
+Opportunity and draft endpoints require authentication and a pre-existing owner record. They return 401 for anonymous requests and 403 when the authenticated principal has no mapped owner record. Before generation, the owner previews the role context and explicitly selected evidence, then consents to processing by the configured provider. Remote mode identifies its provider, deployment, and region in the preview; it remains disabled until data-handling terms are approved. Generated comparisons, resumes, and cover letters are editable drafts with evidence references; they are never automatically approved. Editing a role does not silently rewrite saved document text. Deleting an opportunity prompts whether to unlink or delete linked documents. Approval and export UI remain in issue 1.6.
 
 ### Tailored documents and career planning
 
-- Compare only explicitly selected career evidence with the job description and company context; the current local provider uses deterministic keyword matching and preserves evidence text rather than paraphrasing factual claims.
-- Produce a resume and cover letter for each role, with a visible link from factual claims to supporting profile entries.
-- Highlight missing evidence and uncertain matches instead of inventing qualifications, dates, employers, responsibilities, or results.
-- Allow editing and explicit user approval before a document is marked final.
-- Preserve approved versions so later profile edits do not change an application already sent.
-- Export a simple, text-based, applicant-tracking-system-friendly resume and cover letter. Initial download formats still need to be selected.
-- Create an editable career planning document covering target roles, strengths, development gaps, and next actions.
+- Compare a role's requirements and company context with only the career evidence explicitly selected by the owner.
+- With explicit consent, generate editable drafts such as role comparisons, resumes, and cover letters. Generated content starts as a draft and is never automatically approved.
+- Tie factual claims to selected evidence and surface missing references, evidence gaps, and questions. Do not invent qualifications, dates, employers, responsibilities, or results.
+- Validate provider output and handle failures explicitly without overwriting existing saved content. Use deterministic provider substitutes in automated tests; CI does not require paid model calls or real career data.
+- Allow editing and explicit owner approval of current content. Editing or regenerating approved content clears approval and returns it to draft.
+- Export current resume and cover-letter content as PDF and DOCX. Exports must match saved content; outdated persisted exports are invalidated when content changes.
+- Keep current document text and evidence references in SQL. Removing referenced evidence does not silently rewrite saved text: surface missing references and require factual review.
+- When a role with linked documents is deleted, let the user choose whether to save (unlink) or delete those documents. Do not create hidden historical snapshots.
+- Create an editable career plan covering target roles, strengths, interests, evidence gaps, and next actions. Generated plans are drafts until reviewed and approved.
+- Track a role's submission date, but do not claim to retain the exact historical document submitted.
 
 ### Privacy and security
 
 Career information and application history are private data. Security is a core requirement, not a later enhancement.
 
-- Require login for all career records, role records, and document access; do not enable public registration in the initial personal-use MVP.
+- Use Microsoft account sign-in through the Microsoft identity platform for the explicitly approved owner; disable public registration. Microsoft handles MFA and account recovery.
 - Enforce server-side ownership checks for every read, write, generation, and export operation.
-- Use an established authentication solution, secure session cookies, HTTPS, and protection against cross-site request forgery.
+- Use secure session cookies, HTTPS, and protection against cross-site request forgery.
 - Use encryption at rest through the selected Azure services and managed identity where supported; keep secrets out of source control.
 - Keep resumes, job descriptions, personal data, access tokens, and AI prompts/responses out of application logs.
-- Before generation, show the role and selected evidence being processed and obtain explicit user consent. The current provider runs locally and sends nothing to an external AI service; a remote provider cannot be enabled until its handling terms, region, and retention/training behavior are reviewed.
+- Before generation, show exactly what selected evidence and role/company context will be processed and obtain explicit consent. The default local provider sends nothing externally; the optional remote provider stays disabled until its region, data-handling terms, and provider-side spending limits are reviewed and approved.
 - Treat pasted job descriptions, company text, and model output as untrusted input; never let them override application rules or access other users' data.
-- Provide personal data export and deletion, including generated documents; explain backup retention and deletion limitations.
+- Implement owner-authorized full-data export and "Delete all my data," including stored exports, with a minimal content-free audit trail. Explain service-backup and provider-copy retention/deletion limitations.
 
 ## Technology and hosting
 
-The implemented foundation is one ASP.NET Core MVC application targeting .NET 10, Entity Framework Core with the SQL Server provider, and Azure SQL Database. The app is compatible with a single Azure App Service deployment. The database model includes an owner, career profiles and entries, owner-keyed opportunities, and saved documents with an optional owner-validated opportunity relationship. Opportunity endpoints are protected by authentication and owner checks; the Microsoft OpenID Connect sign-in, owner mapping, and provisioning setup remains outstanding under issue 1.2.
+The implemented foundation is one ASP.NET Core MVC application targeting .NET 10, Entity Framework Core with the SQL Server provider, and Azure SQL Database. The database includes owner-scoped career evidence and opportunities, plus saved documents with an optional owner-validated opportunity relationship. The MVP remains one deployable application hosted in Azure App Service.
 
-The rest of the MVP remains planned:
-
-| Area | Proposed approach |
+| Area | Confirmed approach and status |
 | --- | --- |
-| Application | ASP.NET Core MVC on .NET 10, with a server-rendered UI |
-| Authentication | Established ASP.NET Core-compatible identity provider; provider and MFA approach to be selected |
-| Persistence | Entity Framework Core SQL Server provider with Azure SQL Database |
-| Hosting | Azure App Service |
-| Document storage | Private Azure Blob Storage if binary exports require persistent storage |
+| Application | Server-rendered ASP.NET Core MVC on .NET 10; foundation implemented |
+| Authentication | Microsoft identity platform with personal Microsoft accounts; approved-owner sign-in and owner mapping remain open in 1.2 |
+| Structured data | EF Core and Azure SQL Database |
+| Binary exports | Private Azure Blob Storage; PDF and DOCX exports are in issue 1.6 |
 | Application generation | Local deterministic `keyword-overlap-v1` provider by default; optional Azure OpenAI `gpt-4o-mini` deployment in Australia East is disabled until data-handling approval and secure configuration. See [generation defaults](docs/application-generation.md). |
-| Secrets and access | Managed identity and Azure Key Vault where needed |
-| Operations | Azure Monitor/Application Insights with sensitive-data logging disabled |
-| Delivery | GitHub Actions, automated checks, and repeatable Azure infrastructure configuration |
+| Production access | App Service managed identity for Azure SQL and Blob Storage |
+| Delivery | GitHub Actions CI is implemented; repeatable Azure provisioning and deployment remain open in 1.9 |
 
-Prefer a single deployable application for the MVP. Avoid microservices and additional infrastructure unless a demonstrated requirement calls for them.
+Use the smallest viable low-cost service tiers. Do not add microservices, a separate API, Redis, or dedicated search infrastructure for the MVP.
+
+## Issue status
+
+The linked issues are the source of truth for implementation details and acceptance criteria. The current roadmap is:
+
+| Issue | Scope | Status |
+| --- | --- | --- |
+| [#7 — 1.1 Foundation](https://github.com/samsmithnz/CareerManager/issues/7) | .NET 10 MVC, Azure SQL, migrations, and CI | Closed |
+| [#8 — 1.2 Authentication](https://github.com/samsmithnz/CareerManager/issues/8) | Private Microsoft sign-in and owner enforcement | Open |
+| [#9 — 1.3 Career evidence](https://github.com/samsmithnz/CareerManager/issues/9) | Career evidence workspace and owner-scoped CRUD | Closed |
+| [#10 — 1.4 Opportunities](https://github.com/samsmithnz/CareerManager/issues/10) | Opportunity management and application progress | Closed |
+| [#11 — 1.5 Comparisons and drafts](https://github.com/samsmithnz/CareerManager/issues/11) | Evidence-based comparisons and draft generation | Open |
+| [#12 — 1.6 Review and export](https://github.com/samsmithnz/CareerManager/issues/12) | Current-document editing, approval, PDF/DOCX export | Open |
+| [#13 — 1.7 Career planning](https://github.com/samsmithnz/CareerManager/issues/13) | Editable career plan and explicit approval | Open |
+| [#14 — 1.8 Data lifecycle](https://github.com/samsmithnz/CareerManager/issues/14) | Full-data export and delete-all-data | Open |
+| [#15 — 1.9 Deployment](https://github.com/samsmithnz/CareerManager/issues/15) | Private Azure deployment and end-to-end verification | Open |
+| [#4 — Phase 2](https://github.com/samsmithnz/CareerManager/issues/4) | Document snapshots, version history, and backup/recovery | Open; deferred |
 
 ## Quality bar
 
@@ -114,8 +130,9 @@ Prefer a single deployable application for the MVP. Avoid microservices and addi
 - Clear errors and recoverable generation failures; failed requests must not overwrite saved documents.
 - Private data cannot be accessed without authentication or by another account.
 - Readable, keyboard-accessible forms and document previews.
-- Automated coverage for ownership boundaries, role tracking, document versioning, and generation validation.
-- A repeatable deployment process and a documented, exercised backup/restore procedure before production use.
+- Automated coverage for ownership boundaries, career evidence, role tracking, validation, and generation failure cases using synthetic data.
+- Approval always applies to the current content; saving or exporting does not imply approval.
+- Deployment and deletion limitations are documented. Application-managed version history and backup/recovery are Phase 2, not MVP requirements.
 
 ## Not in the first MVP
 
@@ -125,14 +142,14 @@ Prefer a single deployable application for the MVP. Avoid microservices and addi
 - Automatic ingestion of every existing document or external profile.
 - A commercial multi-tenant service, billing, or collaboration.
 
-## Decisions for later feature work
+## Remaining setup and deferred decisions
 
-- **Identity:** Which login provider and MFA policy should protect the initial owner account? Until selected and implemented, no career-data endpoints should be added.
-- **Remote AI:** Confirm the selected Azure OpenAI deployment is available in Australia East and review its current terms, retention/training policies, and spending limits before enabling the optional remote provider.
-- **Exports:** Which initial downloadable formats are required: PDF, DOCX, or both?
-- **Data lifecycle:** What backup retention, recovery targets, and deletion policy are appropriate?
+- Complete Microsoft identity app registration, redirect URLs, secure credentials, and approved-owner configuration for issue 1.2.
+- Before enabling remote generation, confirm the Azure OpenAI deployment is available in Australia East, review its current data-handling terms, retention/training behavior, and configure provider-side spending limits. Real career data must not be sent until the owner approves those terms and explicitly consents to each request.
+- Configure Azure resources and GitHub Actions deployment access for issue 1.9. Use managed identity or federated credentials where supported.
+- Agree on snapshot/history retention and recovery targets only when implementing Phase 2 issue 4. Azure service-managed protections remain separate from application-level recovery features.
 
-The starting proposal is a private, single-owner application. A broader audience would require an explicit scope change, not just enabling registration.
+The MVP is private and single-owner. Supporting multiple users would require an explicit scope change, not just enabling registration.
 
 ## Development and deployment
 
@@ -195,7 +212,7 @@ Source `CAREERMANAGER_TEST_SQL_CONNECTION` from an approved local secret facilit
 
 The standard GitHub Actions CI restores, builds, audits dependencies, and runs only database-free unit tests; it needs no Azure credentials. To run SQL tests in GitHub Actions, configure the `AZURE_SQL_TEST_CONNECTION_STRING` repository secret for the isolated test database and dispatch the **Azure SQL integration tests** workflow. The workflow fails explicitly when that secret is absent. NuGet audit warnings fail the build, pull requests also run dependency review, and Dependabot checks NuGet and GitHub Actions updates.
 
-No local database, SQLite substitute, or database container is used. The public landing/privacy pages and career-workspace prototype do not expose private career data. Opportunity endpoints fail closed until the identity integration maps an authenticated configured owner to `career_owner_id` and that owner exists in the database. Do not configure production access until issue 1.2's Microsoft identity setup and owner mapping are complete.
+No local database, SQLite substitute, or database container is used. The public landing/privacy pages and synthetic career-workspace prototype do not expose private career data. Career and opportunity endpoints fail closed until the identity integration maps an authenticated configured owner to `career_owner_id` and that owner exists in the database. Do not configure production access until issue 1.2's Microsoft identity setup and owner mapping are complete.
 
 Before Azure deployment, the owner will need to provision or authorize an Azure subscription/resource group, an identity application, the selected AI service if used, and GitHub Actions deployment access. Use managed identity or federated credentials where supported rather than long-lived deployment secrets.
 
@@ -203,4 +220,4 @@ Do not commit real resumes, personal career records, production database copies,
 
 ## Planning
 
-The [1.0 MVP epic](https://github.com/samsmithnz/CareerManager/issues/1) tracks the implementation sequence, acceptance criteria, and unresolved decisions.
+The [1.0 MVP epic](https://github.com/samsmithnz/CareerManager/issues/1) tracks the product scope, implementation sequence, and acceptance criteria. [Issue 4](https://github.com/samsmithnz/CareerManager/issues/4) tracks document history and backup/recovery capabilities deferred to Phase 2.
