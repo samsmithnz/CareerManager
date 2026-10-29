@@ -1,0 +1,83 @@
+name: Deploy private MVP to Azure
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_sha:
+        description: Full commit SHA from main; leave blank to deploy this workflow's commit
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: careermanager-production-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+      AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+      AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      AZURE_RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
+      AZURE_WEBAPP_NAME: ${{ vars.AZURE_WEBAPP_NAME }}
+      SOURCE_SHA: ${{ inputs.source_sha }}
+      WORKFLOW_SHA: ${{ github.sha }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - name: Validate deployment revision
+        shell: bash
+        run: |
+          set -euo pipefail
+          for variable in AZURE_CLIENT_ID AZURE_TENANT_ID AZURE_SUBSCRIPTION_ID AZURE_RESOURCE_GROUP AZURE_WEBAPP_NAME; do
+            if [ -z "${!variable}" ]; then
+              echo "::error::Configure $variable in the protected production environment."
+              exit 1
+            fi
+          done
+
+          deployment_sha="${SOURCE_SHA:-$WORKFLOW_SHA}"
+          if [[ ! "$deployment_sha" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "::error::source_sha must be a full 40-character commit SHA."
+            exit 1
+          fi
+
+          git fetch --no-tags origin +refs/heads/main:refs/remotes/origin/main
+          if ! git cat-file -e "$deployment_sha^{commit}" 2>/dev/null; then
+            git fetch --no-tags origin "$deployment_sha"
+          fi
+          if ! git merge-base --is-ancestor "$deployment_sha" refs/remotes/origin/main; then
+            echo "::error::Deployment revision must be reachable from main."
+            exit 1
+          fi
+          git checkout --detach "$deployment_sha"
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version-file: global.json
+      - run: dotnet restore CareerManager.sln --locked-mode
+      - run: dotnet tool restore
+      - run: dotnet build CareerManager.sln --configuration Release --no-restore
+      - run: dotnet test tests/CareerManager.Tests/CareerManager.Tests.csproj --configuration Release --no-build --no-restore
+      - name: Publish application
+        run: dotnet publish src/CareerManager.Web/CareerManager.Web.csproj --configuration Release --no-restore --output "$RUNNER_TEMP/publish"
+      - name: Package application
+        run: |
+          cd "$RUNNER_TEMP/publish"
+          zip -qr "$RUNNER_TEMP/careermanager.zip" .
+      - uses: azure/login@a457da9ea143d694b1b9c7c869ebb04ebe844ef5 # v2.3.0
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      - name: Deploy package
+        run: az webapp deploy --resource-group "$AZURE_RESOURCE_GROUP" --name "$AZURE_WEBAPP_NAME" --src-path "$RUNNER_TEMP/careermanager.zip" --type zip

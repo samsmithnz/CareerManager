@@ -2,7 +2,7 @@
 
 CareerManager is a private, career-focused workspace for understanding your experience, strengths, interests, and direction. It helps you build a reusable record of your career, explore where you want to go next, and manage opportunities. Role-specific resumes and cover letters are outputs of that broader career work—not the center of the product.
 
-**Status:** The .NET 10 MVC, Azure SQL, and CI foundation (1.1), career evidence workspace (1.3), opportunity management (1.4), and consent-gated role comparisons and draft generation (1.5) are implemented. Microsoft sign-in and identity mapping (1.2) are still in progress. The career workspace prototype uses synthetic content; private career and opportunity data requires an authenticated, owner-mapped account. Document approval/export, career planning, full-data export/deletion, and Azure deployment remain open MVP work.
+**Status:** The .NET 10 MVC and Azure SQL foundation (1.1), career evidence (1.3), opportunities (1.4), consent-gated comparisons and drafts (1.5), document review/export (1.6), career planning (1.7), and full-data export/deletion (1.8) are implemented. Repeatable Azure infrastructure and a protected OIDC deployment workflow are prepared in 1.9, but have not been provisioned or verified in a live environment. Microsoft sign-in and stable owner mapping (1.2) remain a prerequisite; private data routes fail closed until that work is complete. The public workspace prototype uses only synthetic content.
 
 ### Career workspace prototype
 
@@ -63,7 +63,7 @@ Leaving "what the world needs" out of the diagram does not mean impact is unimpo
 - Track roles through saved, preparing, applied, interviewing, offer, rejected, or withdrawn states, including submission date and next-action notes/date.
 - Editing a role does not silently rewrite saved document text. When deleting a role with linked documents, the user chooses whether to save (unlink) or delete those documents.
 
-Opportunity and draft endpoints require authentication and a pre-existing owner record. They return 401 for anonymous requests and 403 when the authenticated principal has no mapped owner record. Before generation, the owner previews the role context and explicitly selected evidence, then consents to processing by the configured provider. Remote mode identifies its provider, deployment, and region in the preview; it remains disabled until data-handling terms are approved. Generated comparisons, resumes, and cover letters are editable drafts with evidence references; they are never automatically approved. Editing a role does not silently rewrite saved document text. Deleting an opportunity prompts whether to unlink or delete linked documents. Approval and export UI remain in issue 1.6.
+Opportunity and draft endpoints require authentication and a pre-existing owner record. They return 401 for anonymous requests and 403 when the authenticated principal has no mapped owner record. Before generation, the owner previews the role context and explicitly selected evidence, then consents to processing by the configured provider. Remote mode identifies its provider, deployment, and region in the preview; it remains disabled until data-handling terms are approved. Generated comparisons, resumes, and cover letters are editable drafts with evidence references; they are never automatically approved. Editing a role does not silently rewrite saved document text. Deleting an opportunity prompts whether to unlink or delete linked documents.
 
 ### Tailored documents and career planning
 
@@ -72,7 +72,7 @@ Opportunity and draft endpoints require authentication and a pre-existing owner 
 - Tie factual claims to selected evidence and surface missing references, evidence gaps, and questions. Do not invent qualifications, dates, employers, responsibilities, or results.
 - Validate provider output and handle failures explicitly without overwriting existing saved content. Use deterministic provider substitutes in automated tests; CI does not require paid model calls or real career data.
 - Allow editing and explicit owner approval of current content. Editing or regenerating approved content clears approval and returns it to draft.
-- Export current resume and cover-letter content as PDF and DOCX. Exports must match saved content; outdated persisted exports are invalidated when content changes.
+- Export current resume and cover-letter content as PDF and DOCX. Exports are generated on demand, are not persisted, and must match saved content.
 - Keep current document text and evidence references in SQL. Removing referenced evidence does not silently rewrite saved text: surface missing references and require factual review.
 - When a role with linked documents is deleted, let the user choose whether to save (unlink) or delete those documents. Do not create hidden historical snapshots.
 - Maintain an owner-scoped editable career plan covering target roles, strengths, interests, selected factual evidence, inferred gaps, recommendations, next actions, and progress. `/CareerPlans` supports saving and revisiting the current plan; regeneration previews the exact selected inputs, requires consent, then presents suggestions for explicit replacement. Only the current content is retained, and edits or replacement clear approval.
@@ -98,14 +98,16 @@ The implemented foundation is one ASP.NET Core MVC application targeting .NET 10
 | Area | Confirmed approach and status |
 | --- | --- |
 | Application | Server-rendered ASP.NET Core MVC on .NET 10; foundation implemented |
-| Authentication | Microsoft identity platform with personal Microsoft accounts; approved-owner sign-in and owner mapping remain open in 1.2 |
+| Authentication | Microsoft identity platform with personal Microsoft accounts; approved-owner sign-in and owner mapping remain in progress in 1.2 |
 | Structured data | EF Core and Azure SQL Database |
-| Binary exports | Private Azure Blob Storage; PDF and DOCX exports are in issue 1.6 |
+| Binary exports | No persisted binaries or Blob Storage; PDF and DOCX are generated on demand |
 | Application generation | Local deterministic `keyword-overlap-v1` provider by default; optional Azure OpenAI `gpt-4o-mini` deployment in East US 2 (Virginia) is disabled until data-handling approval and secure configuration. See [generation defaults](docs/application-generation.md). |
-| Production access | App Service managed identity for Azure SQL and Blob Storage |
-| Delivery | GitHub Actions CI is implemented; repeatable Azure provisioning and deployment remain open in 1.9 |
+| Production access | Bicep provisions an App Service managed identity and Azure SQL; a custom least-privilege runtime role is applied by an operator |
+| Delivery | GitHub Actions CI and a protected, manually dispatched OIDC deployment workflow are implemented; live provisioning and verification remain pending |
 
 Use the smallest viable low-cost service tiers. Do not add microservices, a separate API, Redis, or dedicated search infrastructure for the MVP.
+
+The [Azure deployment runbook](docs/deployment.md) covers regional/tier checks, repeatable Bicep provisioning, GitHub OIDC, database permissions and migrations, application rollback, service limitations, and the synthetic release checklist. The infrastructure and workflow are not evidence of a live deployment; do not deploy until the 1.2 identity/owner-mapping prerequisite is complete.
 
 ## Issue status
 
@@ -114,14 +116,14 @@ The linked issues are the source of truth for implementation details and accepta
 | Issue | Scope | Status |
 | --- | --- | --- |
 | [#7 — 1.1 Foundation](https://github.com/samsmithnz/CareerManager/issues/7) | .NET 10 MVC, Azure SQL, migrations, and CI | Closed |
-| [#8 — 1.2 Authentication](https://github.com/samsmithnz/CareerManager/issues/8) | Private Microsoft sign-in and owner enforcement | Open |
+| [#8 — 1.2 Authentication](https://github.com/samsmithnz/CareerManager/issues/8) | Private Microsoft sign-in and owner enforcement | Open; blocks live deployment |
 | [#9 — 1.3 Career evidence](https://github.com/samsmithnz/CareerManager/issues/9) | Career evidence workspace and owner-scoped CRUD | Closed |
 | [#10 — 1.4 Opportunities](https://github.com/samsmithnz/CareerManager/issues/10) | Opportunity management and application progress | Closed |
-| [#11 — 1.5 Comparisons and drafts](https://github.com/samsmithnz/CareerManager/issues/11) | Evidence-based comparisons and draft generation | Open |
-| [#12 — 1.6 Review and export](https://github.com/samsmithnz/CareerManager/issues/12) | Current-document editing, approval, PDF/DOCX export | Open |
-| [#13 — 1.7 Career planning](https://github.com/samsmithnz/CareerManager/issues/13) | Editable career plan and explicit approval | Open |
-| [#14 — 1.8 Data lifecycle](https://github.com/samsmithnz/CareerManager/issues/14) | Full-data export and delete-all-data | Open |
-| [#15 — 1.9 Deployment](https://github.com/samsmithnz/CareerManager/issues/15) | Private Azure deployment and end-to-end verification | Open |
+| [#11 — 1.5 Comparisons and drafts](https://github.com/samsmithnz/CareerManager/issues/11) | Evidence-based comparisons and draft generation | Closed |
+| [#12 — 1.6 Review and export](https://github.com/samsmithnz/CareerManager/issues/12) | Current-document editing, approval, PDF/DOCX export | Implemented |
+| [#13 — 1.7 Career planning](https://github.com/samsmithnz/CareerManager/issues/13) | Editable career plan and explicit approval | Implemented |
+| [#14 — 1.8 Data lifecycle](https://github.com/samsmithnz/CareerManager/issues/14) | Full-data export and delete-all-data | Implemented |
+| [#15 — 1.9 Deployment](https://github.com/samsmithnz/CareerManager/issues/15) | Private Azure deployment and end-to-end verification | Infrastructure and workflow prepared; live verification pending |
 | [#4 — Phase 2](https://github.com/samsmithnz/CareerManager/issues/4) | Document snapshots, version history, and backup/recovery | Open; deferred |
 
 ## Quality bar
@@ -146,7 +148,7 @@ The linked issues are the source of truth for implementation details and accepta
 
 - Complete Microsoft identity app registration, redirect URLs, secure credentials, and approved-owner configuration for issue 1.2.
 - Before enabling remote generation, confirm the Azure OpenAI deployment is available in East US 2 (Virginia), review its current data-handling terms, retention/training behavior, and configure provider-side spending limits. Real career data must not be sent until the owner approves those terms and explicitly consents to each request.
-- Configure Azure resources and GitHub Actions deployment access for issue 1.9. Use managed identity or federated credentials where supported.
+- Complete the Azure resource setup, protected GitHub production environment, and live synthetic verification in the [deployment runbook](docs/deployment.md). Use managed identity and GitHub OIDC; no subscription, identity registration, or production credentials are assumed.
 - Agree on snapshot/history retention and recovery targets only when implementing Phase 2 issue 4. Azure service-managed protections remain separate from application-level recovery features.
 
 The MVP is private and single-owner. Supporting multiple users would require an explicit scope change, not just enabling registration.
@@ -165,7 +167,7 @@ The MVP is private and single-owner. Supporting multiple users would require an 
   ```
 
 - Use a different, isolated Azure SQL database named `CareerManager-Test` or `CareerManager-Testing` for database-dependent tests. The test command accepts its connection string only through `CAREERMANAGER_TEST_SQL_CONNECTION`; the integration workflow reads the repository secret `AZURE_SQL_TEST_CONNECTION_STRING`.
-- Production configuration is separate: deploy with `ASPNETCORE_ENVIRONMENT=Production` and provide `ConnectionStrings__CareerManager` through the App Service configuration or an approved secret store. Do not reuse development or test credentials or databases. Provisioning and deployment are part of issue 1.9.
+- Production configuration is separate: Bicep configures `ASPNETCORE_ENVIRONMENT=Production` and a managed-identity Azure SQL connection string. Do not reuse development or test databases. Provisioning, the SQL runtime role, migration/release procedure, and OIDC setup are documented in [deployment instructions](docs/deployment.md).
 - For development/test cost, use the Azure SQL Database free offer when eligible; otherwise choose the lowest currently supported General Purpose serverless compute with auto-pause and the smallest suitable storage. Confirm subscription, region, offer limits, and current pricing in the [Azure SQL free offer](https://learn.microsoft.com/azure/azure-sql/database/free-offer?view=azuresql) and [serverless tier documentation](https://learn.microsoft.com/azure/azure-sql/database/serverless-tier-overview?view=azuresql) before provisioning. No Azure resources or credentials are included here.
 - The application fails clearly at startup when `ConnectionStrings:CareerManager` is missing. It does not automatically apply migrations or seed data.
 
