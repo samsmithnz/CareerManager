@@ -118,7 +118,13 @@ public sealed class OwnerDataService(CareerManagerContext context)
         {
             if (transaction is not null)
             {
-                await transaction.RollbackAsync(CancellationToken.None);
+                try
+                {
+                    await transaction.RollbackAsync(CancellationToken.None);
+                }
+                catch
+                {
+                }
             }
 
             context.ChangeTracker.Clear();

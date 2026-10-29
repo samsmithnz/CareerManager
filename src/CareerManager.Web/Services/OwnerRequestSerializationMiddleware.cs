@@ -59,22 +59,34 @@ public sealed class OwnerRequestSerializationMiddleware(
         }
         catch (OperationCanceledException) when (httpContext.RequestAborted.IsCancellationRequested)
         {
-            if (connectionOpened)
+            try
             {
-                await context.Database.CloseConnectionAsync();
+                if (connectionOpened)
+                {
+                    await context.Database.CloseConnectionAsync();
+                }
+            }
+            finally
+            {
+                localLock?.Dispose();
             }
 
-            localLock?.Dispose();
             throw;
         }
         catch
         {
-            if (connectionOpened)
+            try
             {
-                await context.Database.CloseConnectionAsync();
+                if (connectionOpened)
+                {
+                    await context.Database.CloseConnectionAsync();
+                }
+            }
+            finally
+            {
+                localLock?.Dispose();
             }
 
-            localLock?.Dispose();
             httpContext.Response.StatusCode = StatusCodes.Status503ServiceUnavailable;
             await httpContext.Response.WriteAsync(
                 "Owner data is temporarily unavailable. Please retry shortly.",

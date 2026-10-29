@@ -12,4 +12,6 @@ The owner-only, CSRF-protected delete action removes all of that owner's applica
 
 Owner requests are serialized using a SQL Server application lock (and an in-process lock) so an in-flight generation, export, or other request finishes before deletion runs. Deletion leaves the owner registration and configured allowlist intact, allowing that owner to start fresh. SQL changes and the successful audit record commit together; a failed operation rolls back and is safe to retry.
 
+Apply the `AddDataDeletionAuditEvent` EF migration to the configured Azure SQL database before deploying this feature.
+
 This action cannot purge Azure service-managed backups or provider copies; they may retain data until their normal expiration. It does not delete the Microsoft account, and already-downloaded export copies cannot be recalled.
