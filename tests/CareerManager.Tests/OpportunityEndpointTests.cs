@@ -8,6 +8,7 @@ using CareerManager.Security;
 using CareerManager.Services;
 using CareerManager.ViewModels;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
@@ -50,7 +51,8 @@ public sealed class OpportunityEndpointTests
             await using var factory = new OpportunityWebApplicationFactory();
             using var client = factory.CreateClient(new WebApplicationFactoryClientOptions
             {
-                AllowAutoRedirect = false
+                AllowAutoRedirect = false,
+                BaseAddress = new Uri("https://localhost")
             });
 
             var compareResponse = await client.GetAsync("/ApplicationDrafts/Compare/1");
@@ -93,7 +95,8 @@ public sealed class OpportunityEndpointTests
             await using var factory = new OpportunityWebApplicationFactory();
             using var client = factory.CreateClient(new WebApplicationFactoryClientOptions
             {
-                AllowAutoRedirect = false
+                AllowAutoRedirect = false,
+                BaseAddress = new Uri("https://localhost")
             });
 
             var index = await client.GetAsync("/CareerPlans");
@@ -166,7 +169,8 @@ public sealed class OpportunityEndpointTests
             using var client = factory.CreateClient(new WebApplicationFactoryClientOptions
             {
                 AllowAutoRedirect = false,
-                HandleCookies = true
+                HandleCookies = true,
+                BaseAddress = new Uri("https://localhost")
             });
             client.DefaultRequestHeaders.Add("X-Test-Owner", "owner-a");
             var reviewResponse = await client.GetAsync($"/CareerPlans/ReviewGeneration/{planId}");
@@ -230,7 +234,8 @@ public sealed class OpportunityEndpointTests
             using var client = factory.CreateClient(new WebApplicationFactoryClientOptions
             {
                 AllowAutoRedirect = false,
-                HandleCookies = true
+                HandleCookies = true,
+                BaseAddress = new Uri("https://localhost")
             });
             client.DefaultRequestHeaders.Add("X-Test-Owner", "owner-a");
             var createPage = await client.GetAsync("/CareerPlans/Create");
@@ -311,7 +316,8 @@ public sealed class OpportunityEndpointTests
             using var client = factory.CreateClient(new WebApplicationFactoryClientOptions
             {
                 AllowAutoRedirect = false,
-                HandleCookies = true
+                HandleCookies = true,
+                BaseAddress = new Uri("https://localhost")
             });
             client.DefaultRequestHeaders.Add("X-Test-Owner", "owner-a");
 
@@ -387,7 +393,8 @@ public sealed class OpportunityEndpointTests
 
             using var client = factory.CreateClient(new WebApplicationFactoryClientOptions
             {
-                AllowAutoRedirect = false
+                AllowAutoRedirect = false,
+                BaseAddress = new Uri("https://localhost")
             });
             client.DefaultRequestHeaders.Add("X-Test-Owner", "owner-a");
             var response = await client.GetAsync("/Opportunities/Details/1");
@@ -520,7 +527,8 @@ public sealed class OpportunityEndpointTests
             using var client = factory.CreateClient(new WebApplicationFactoryClientOptions
             {
                 AllowAutoRedirect = false,
-                HandleCookies = true
+                HandleCookies = true,
+                BaseAddress = new Uri("https://localhost")
             });
             client.DefaultRequestHeaders.Add("X-Test-Owner", "owner-a");
             var exportResponse = await client.GetAsync("/AccountData/Export");
@@ -686,7 +694,8 @@ public sealed class OpportunityEndpointTests
             using var client = factory.CreateClient(new WebApplicationFactoryClientOptions
             {
                 AllowAutoRedirect = false,
-                HandleCookies = true
+                HandleCookies = true,
+                BaseAddress = new Uri("https://localhost")
             });
             client.DefaultRequestHeaders.Add("X-Test-Owner", "owner-a");
             var compareResponse = await client.GetAsync(
@@ -765,7 +774,8 @@ public sealed class OpportunityEndpointTests
             await using var factory = new OpportunityWebApplicationFactory();
             using var client = factory.CreateClient(new WebApplicationFactoryClientOptions
             {
-                AllowAutoRedirect = false
+                AllowAutoRedirect = false,
+                BaseAddress = new Uri("https://localhost")
             });
             if (ownerId is not null)
             {
@@ -810,6 +820,13 @@ public sealed class OpportunityEndpointTests
                 }).AddScheme<AuthenticationSchemeOptions, TestAuthenticationHandler>(
                     TestAuthenticationHandler.SchemeName,
                     _ => { });
+                services.PostConfigure<OpenIdConnectOptions>(
+                    OpenIdConnectDefaults.AuthenticationScheme,
+                    options =>
+                    {
+                        options.ClientId = "test-client";
+                        options.ClientSecret = "not-a-real-secret";
+                    });
                 if (generationProvider is not null)
                 {
                     services.RemoveAll<IApplicationGenerationProvider>();

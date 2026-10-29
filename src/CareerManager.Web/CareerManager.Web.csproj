@@ -21,6 +21,7 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.14" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="10.0.14" />
     <PackageReference Include="PDFsharp" Version="6.2.4" />
     <PackageReference Include="System.Security.Cryptography.Pkcs" Version="10.0.14">
       <ExcludeAssets>all</ExcludeAssets>

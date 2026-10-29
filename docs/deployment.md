@@ -2,11 +2,30 @@
 
 ## Status and prerequisites
 
-`infra/main.bicep` and `.github/workflows/deploy-azure.yml` provide repeatable infrastructure and package deployment. They do not mean the production app has been deployed or verified. Do not deploy until Microsoft sign-in, stable approved-owner mapping, and owner authorization from issue 1.2 are implemented and reviewed. Production credentials and an authorized Azure subscription/resource group are not available in this repository environment, so live provisioning and the synthetic end-to-end checks remain operator tasks.
+`infra/main.bicep` and `.github/workflows/deploy-azure.yml` provide repeatable infrastructure and package deployment. They do not mean the production app has been deployed or verified. Do not deploy until the Microsoft sign-in and stable approved-owner mapping are reviewed, the identity settings below are configured, and the synthetic end-to-end checks pass. Production credentials and an authorized Azure subscription/resource group are not available in this repository environment, so live provisioning and the synthetic end-to-end checks remain operator tasks.
 
 The deployment uses no Blob Storage: PDF and DOCX files are generated on demand, are not persisted, and there are no other persisted binaries. The App Service is publicly reachable over HTTPS; the SQL server accepts connections only from the App Service's outbound IP addresses and the administrator's explicitly configured access. Anonymous routes must remain limited to the public landing/privacy pages.
 
 Before provisioning, an authorized operator must choose the Azure subscription/resource group and region, confirm App Service Linux Basic B1 and Azure SQL serverless availability in that region, identify a Microsoft Entra security group for SQL administration, and authorize the GitHub OIDC application. Register the Microsoft identity application and the exact HTTPS redirect URL only after the App Service name is final. Keep its credentials and the approved-owner configuration in the protected App Service configuration; never put them in this repository or workflow logs.
+
+## Microsoft account sign-in and owner setup
+
+Register a confidential web application with Microsoft identity platform and enable **personal Microsoft accounts only**. Configure its redirect URI as `https://<app-service-host>/signin-microsoft` (and `https://localhost:7194/signin-microsoft` for the local HTTPS launch profile when used). Create a client secret and keep it only in protected application configuration. The app uses the `consumers` OpenID Connect authority, authorization-code flow with PKCE, and an eight-hour secure, HttpOnly cookie; it does not request or retain access tokens.
+
+Configure these application settings before enabling private access:
+
+- `Authentication__Microsoft__ClientId`
+- `Authentication__Microsoft__ClientSecret`
+- `Authentication__Microsoft__OwnerSubject` — the configured owner's exact validated OIDC `sub` claim, not an email address
+- `Authentication__Microsoft__OwnerId` — the internal `CareerOwners.Id` to which that subject maps
+
+Obtain the `sub` claim through a trusted operator process that does not persist or log the ID token. Do not use the mutable email claim as an owner key. The application rejects other subjects, does not create owner records during sign-in, and denies private access when the owner mapping is missing. After applying the initial database migration, provision the owner record explicitly using the same internal ID, for example in a trusted SQL administration session:
+
+```sql
+INSERT INTO dbo.CareerOwners (Id) VALUES (N'<configured-owner-id>');
+```
+
+For local development, store values with `dotnet user-secrets set "Authentication:Microsoft:ClientId" "<client-id>"`, `dotnet user-secrets set "Authentication:Microsoft:ClientSecret" "<client-secret>"`, `dotnet user-secrets set "Authentication:Microsoft:OwnerSubject" "<validated-subject>"`, and `dotnet user-secrets set "Authentication:Microsoft:OwnerId" "<internal-owner-id>"`. In Azure, set the same values in the App Service's protected configuration before deployment. A missing setting fails closed for private access and sign-in; there is no public registration or first-visitor enrollment.
 
 Check current regional availability before deploying:
 
