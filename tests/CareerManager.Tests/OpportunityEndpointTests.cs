@@ -77,6 +77,195 @@ public sealed class OpportunityEndpointTests
     }
 
     [Fact]
+    public async Task AnonymousCareerPlanRequestsAreDenied()
+    {
+        const string connectionString =
+            "Server=tcp:testing.database.windows.net,1433;Initial Catalog=CareerManager-Test;Integrated Security=True;Encrypt=True;TrustServerCertificate=False";
+        const string connectionStringEnvironmentVariable = "ConnectionStrings__CareerManager";
+        var previousConnectionString = Environment.GetEnvironmentVariable(connectionStringEnvironmentVariable);
+        Environment.SetEnvironmentVariable(connectionStringEnvironmentVariable, connectionString);
+
+        try
+        {
+            await using var factory = new OpportunityWebApplicationFactory();
+            using var client = factory.CreateClient(new WebApplicationFactoryClientOptions
+            {
+                AllowAutoRedirect = false
+            });
+
+            var index = await client.GetAsync("/CareerPlans");
+            var create = await client.GetAsync("/CareerPlans/Create");
+            var edit = await client.GetAsync("/CareerPlans/Edit/1");
+            var generation = await client.GetAsync("/CareerPlans/ReviewGeneration/1");
+            var approval = await client.PostAsync("/CareerPlans/Approve/1", new FormUrlEncodedContent([]));
+
+            Assert.Equal(System.Net.HttpStatusCode.Unauthorized, index.StatusCode);
+            Assert.Equal(System.Net.HttpStatusCode.Unauthorized, create.StatusCode);
+            Assert.Equal(System.Net.HttpStatusCode.Unauthorized, edit.StatusCode);
+            Assert.Equal(System.Net.HttpStatusCode.Unauthorized, generation.StatusCode);
+            Assert.Equal(System.Net.HttpStatusCode.Unauthorized, approval.StatusCode);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable(connectionStringEnvironmentVariable, previousConnectionString);
+        }
+    }
+
+    [Fact]
+    public async Task CareerPlanGeneratedSuggestionsArePresentedForReviewBeforeReplace()
+    {
+        const string connectionString =
+            "Server=tcp:testing.database.windows.net,1433;Initial Catalog=CareerManager-Test;Integrated Security=True;Encrypt=True;TrustServerCertificate=False";
+        const string connectionStringEnvironmentVariable = "ConnectionStrings__CareerManager";
+        var previousConnectionString = Environment.GetEnvironmentVariable(connectionStringEnvironmentVariable);
+        Environment.SetEnvironmentVariable(connectionStringEnvironmentVariable, connectionString);
+
+        try
+        {
+            await using var factory = new OpportunityWebApplicationFactory();
+            int planId;
+            using (var scope = factory.Services.CreateScope())
+            {
+                var context = scope.ServiceProvider.GetRequiredService<CareerManagerContext>();
+                var owner = new CareerOwner { Id = "owner-a" };
+                var profile = new CareerProfile { OwnerId = owner.Id, Name = "Private profile" };
+                var evidence = new CareerEntry
+                {
+                    OwnerId = owner.Id,
+                    Profile = profile,
+                    Category = "Achievement",
+                    Title = "Reporting dashboard",
+                    Description = "Built reporting dashboards using SQL for teams."
+                };
+                var plan = new CareerPlan
+                {
+                    OwnerId = owner.Id,
+                    TargetRoles = "Reporting dashboards",
+                    Strengths = "Communicating results",
+                    Interests = "Data analysis",
+                    EvidenceGaps = "Existing gap",
+                    Recommendations = "Existing recommendation",
+                    NextActions = "Existing action",
+                    Progress = "Progress note"
+                };
+                plan.EvidenceReferences.Add(new CareerPlanEvidence
+                {
+                    OwnerId = owner.Id,
+                    CareerEntryId = evidence.Id,
+                    Entry = evidence,
+                    Plan = plan
+                });
+                context.AddRange(owner, profile, evidence, plan);
+                await context.SaveChangesAsync();
+                planId = plan.Id;
+            }
+
+            using var client = factory.CreateClient(new WebApplicationFactoryClientOptions
+            {
+                AllowAutoRedirect = false,
+                HandleCookies = true
+            });
+            client.DefaultRequestHeaders.Add("X-Test-Owner", "owner-a");
+            var reviewResponse = await client.GetAsync($"/CareerPlans/ReviewGeneration/{planId}");
+            var reviewPage = await reviewResponse.Content.ReadAsStringAsync();
+            var previewToken = Regex.Match(reviewPage, "name=\"PreviewToken\" value=\"([^\"]+)\"").Groups[1].Value;
+            var antiforgeryToken = Regex.Match(
+                reviewPage,
+                "name=\"__RequestVerificationToken\"[^>]*value=\"([^\"]+)\"").Groups[1].Value;
+
+            Assert.Equal(System.Net.HttpStatusCode.OK, reviewResponse.StatusCode);
+            Assert.Contains("Built reporting dashboards using SQL", reviewPage, StringComparison.Ordinal);
+            Assert.False(string.IsNullOrEmpty(previewToken));
+            Assert.False(string.IsNullOrEmpty(antiforgeryToken));
+
+            var generatedResponse = await client.PostAsync(
+                $"/CareerPlans/Generate/{planId}",
+                new FormUrlEncodedContent(
+                [
+                    new KeyValuePair<string, string>("PreviewToken", previewToken),
+                    new KeyValuePair<string, string>("Consent", "true"),
+                    new KeyValuePair<string, string>("__RequestVerificationToken", antiforgeryToken)
+                ]));
+            var generatedPage = await generatedResponse.Content.ReadAsStringAsync();
+
+            Assert.Equal(System.Net.HttpStatusCode.OK, generatedResponse.StatusCode);
+            Assert.Contains("Suggested evidence gaps — not facts", generatedPage, StringComparison.Ordinal);
+            Assert.Contains("Recommendations and possible alignments — not facts", generatedPage, StringComparison.Ordinal);
+            Assert.Contains("Replace generated sections with this reviewed result", generatedPage, StringComparison.Ordinal);
+            using var verificationScope = factory.Services.CreateScope();
+            var savedPlan = await verificationScope.ServiceProvider.GetRequiredService<CareerManagerContext>()
+                .CareerPlans.SingleAsync(plan => plan.Id == planId);
+            Assert.Equal("Existing gap", savedPlan.EvidenceGaps);
+            Assert.Equal("Existing recommendation", savedPlan.Recommendations);
+            Assert.Equal("Existing action", savedPlan.NextActions);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable(connectionStringEnvironmentVariable, previousConnectionString);
+        }
+    }
+
+    [Fact]
+    public async Task CareerPlanCanBeCreatedWithOnlyRequiredTargetRoles()
+    {
+        const string connectionString =
+            "Server=tcp:testing.database.windows.net,1433;Initial Catalog=CareerManager-Test;Integrated Security=True;Encrypt=True;TrustServerCertificate=False";
+        const string connectionStringEnvironmentVariable = "ConnectionStrings__CareerManager";
+        var previousConnectionString = Environment.GetEnvironmentVariable(connectionStringEnvironmentVariable);
+        Environment.SetEnvironmentVariable(connectionStringEnvironmentVariable, connectionString);
+
+        try
+        {
+            await using var factory = new OpportunityWebApplicationFactory();
+            using (var seedScope = factory.Services.CreateScope())
+            {
+                var context = seedScope.ServiceProvider.GetRequiredService<CareerManagerContext>();
+                context.CareerOwners.Add(new CareerOwner { Id = "owner-a" });
+                await context.SaveChangesAsync();
+            }
+
+            using var client = factory.CreateClient(new WebApplicationFactoryClientOptions
+            {
+                AllowAutoRedirect = false,
+                HandleCookies = true
+            });
+            client.DefaultRequestHeaders.Add("X-Test-Owner", "owner-a");
+            var createPage = await client.GetAsync("/CareerPlans/Create");
+            var page = await createPage.Content.ReadAsStringAsync();
+            var antiforgeryToken = Regex.Match(
+                page,
+                "name=\"__RequestVerificationToken\"[^>]*value=\"([^\"]+)\"").Groups[1].Value;
+
+            var response = await client.PostAsync(
+                "/CareerPlans/Create",
+                new FormUrlEncodedContent(
+                [
+                    new KeyValuePair<string, string>("Input.TargetRoles", "Technical writer"),
+                    new KeyValuePair<string, string>("Input.Strengths", ""),
+                    new KeyValuePair<string, string>("Input.Interests", ""),
+                    new KeyValuePair<string, string>("Input.EvidenceGaps", ""),
+                    new KeyValuePair<string, string>("Input.Recommendations", ""),
+                    new KeyValuePair<string, string>("Input.NextActions", ""),
+                    new KeyValuePair<string, string>("Input.Progress", ""),
+                    new KeyValuePair<string, string>("__RequestVerificationToken", antiforgeryToken)
+                ]));
+
+            Assert.Equal(System.Net.HttpStatusCode.Redirect, response.StatusCode);
+            using var scope = factory.Services.CreateScope();
+            var plan = await scope.ServiceProvider.GetRequiredService<CareerManagerContext>()
+                .CareerPlans.SingleAsync();
+            Assert.Equal("Technical writer", plan.TargetRoles);
+            Assert.Empty(plan.Strengths);
+            Assert.Empty(plan.Interests);
+            Assert.Empty(plan.NextActions);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable(connectionStringEnvironmentVariable, previousConnectionString);
+        }
+    }
+
+    [Fact]
     public async Task ComparisonPreviewShowsSelectedOwnerEvidenceAndEncodesPastedText()
     {
         const string connectionString =

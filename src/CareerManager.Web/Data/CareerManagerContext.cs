@@ -11,6 +11,8 @@ public sealed class CareerManagerContext(DbContextOptions<CareerManagerContext> 
     public DbSet<CareerOpportunity> CareerOpportunities => Set<CareerOpportunity>();
     public DbSet<CareerDocument> CareerDocuments => Set<CareerDocument>();
     public DbSet<CareerDocumentEvidence> CareerDocumentEvidence => Set<CareerDocumentEvidence>();
+    public DbSet<CareerPlan> CareerPlans => Set<CareerPlan>();
+    public DbSet<CareerPlanEvidence> CareerPlanEvidence => Set<CareerPlanEvidence>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -43,6 +45,7 @@ public sealed class CareerManagerContext(DbContextOptions<CareerManagerContext> 
             entity.HasIndex(entry => new { entry.OwnerId, entry.ProfileId, entry.SyntheticKey })
                 .IsUnique()
                 .HasFilter("[SyntheticKey] IS NOT NULL");
+            entity.HasAlternateKey(entry => new { entry.OwnerId, entry.Id });
             entity.HasOne(entry => entry.Profile)
                 .WithMany(profile => profile.Entries)
                 .HasForeignKey(entry => new { entry.OwnerId, entry.ProfileId })
@@ -106,6 +109,49 @@ public sealed class CareerManagerContext(DbContextOptions<CareerManagerContext> 
                 .HasForeignKey(reference => new { reference.OwnerId, reference.CareerDocumentId })
                 .HasPrincipalKey(document => new { document.OwnerId, document.Id })
                 .OnDelete(DeleteBehavior.Cascade);
+            entity.HasIndex(reference => new { reference.OwnerId, reference.CareerEntryId });
+        });
+
+        modelBuilder.Entity<CareerPlan>(entity =>
+        {
+            entity.HasKey(plan => plan.Id);
+            entity.Property(plan => plan.OwnerId).HasMaxLength(256).IsRequired();
+            entity.Property(plan => plan.TargetRoles).HasMaxLength(4000).IsRequired();
+            entity.Property(plan => plan.Strengths).HasMaxLength(4000).IsRequired();
+            entity.Property(plan => plan.Interests).HasMaxLength(4000).IsRequired();
+            entity.Property(plan => plan.EvidenceGaps).HasMaxLength(4000).IsRequired();
+            entity.Property(plan => plan.Recommendations).HasMaxLength(4000).IsRequired();
+            entity.Property(plan => plan.NextActions).HasMaxLength(4000).IsRequired();
+            entity.Property(plan => plan.Progress).HasMaxLength(4000).IsRequired();
+            entity.Property(plan => plan.ConcurrencyToken).IsConcurrencyToken();
+            entity.Property(plan => plan.ApprovedContentHash).HasMaxLength(64);
+            entity.HasAlternateKey(plan => new { plan.OwnerId, plan.Id });
+            entity.HasIndex(plan => plan.OwnerId).IsUnique();
+            entity.HasOne(plan => plan.Owner)
+                .WithMany(owner => owner.Plans)
+                .HasForeignKey(plan => plan.OwnerId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<CareerPlanEvidence>(entity =>
+        {
+            entity.HasKey(reference => new
+            {
+                reference.OwnerId,
+                reference.CareerPlanId,
+                reference.CareerEntryId
+            });
+            entity.Property(reference => reference.OwnerId).HasMaxLength(256).IsRequired();
+            entity.HasOne(reference => reference.Plan)
+                .WithMany(plan => plan.EvidenceReferences)
+                .HasForeignKey(reference => new { reference.OwnerId, reference.CareerPlanId })
+                .HasPrincipalKey(plan => new { plan.OwnerId, plan.Id })
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(reference => reference.Entry)
+                .WithMany()
+                .HasForeignKey(reference => new { reference.OwnerId, reference.CareerEntryId })
+                .HasPrincipalKey(entry => new { entry.OwnerId, entry.Id })
+                .OnDelete(DeleteBehavior.Restrict);
             entity.HasIndex(reference => new { reference.OwnerId, reference.CareerEntryId });
         });
     }

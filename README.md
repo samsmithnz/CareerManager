@@ -75,7 +75,7 @@ Opportunity and draft endpoints require authentication and a pre-existing owner 
 - Export current resume and cover-letter content as PDF and DOCX. Exports must match saved content; outdated persisted exports are invalidated when content changes.
 - Keep current document text and evidence references in SQL. Removing referenced evidence does not silently rewrite saved text: surface missing references and require factual review.
 - When a role with linked documents is deleted, let the user choose whether to save (unlink) or delete those documents. Do not create hidden historical snapshots.
-- Create an editable career plan covering target roles, strengths, interests, evidence gaps, and next actions. Generated plans are drafts until reviewed and approved.
+- Maintain an owner-scoped editable career plan covering target roles, strengths, interests, selected factual evidence, inferred gaps, recommendations, next actions, and progress. `/CareerPlans` supports saving and revisiting the current plan; regeneration previews the exact selected inputs, requires consent, then presents suggestions for explicit replacement. Only the current content is retained, and edits or replacement clear approval.
 - Track a role's submission date, but do not claim to retain the exact historical document submitted.
 
 ### Privacy and security

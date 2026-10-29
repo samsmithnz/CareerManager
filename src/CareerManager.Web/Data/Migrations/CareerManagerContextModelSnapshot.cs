@@ -222,6 +222,98 @@ namespace CareerManager.Data.Migrations
                     b.ToTable("CareerOwners");
                 });
 
+            modelBuilder.Entity("CareerManager.Models.CareerPlan", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime?>("ApprovedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ApprovedContentHash")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<Guid>("ConcurrencyToken")
+                        .IsConcurrencyToken()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("EvidenceGaps")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<string>("Interests")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<string>("NextActions")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<string>("OwnerId")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<string>("Progress")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<string>("Recommendations")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<string>("Strengths")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<string>("TargetRoles")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OwnerId")
+                        .IsUnique();
+
+                    b.ToTable("CareerPlans");
+                });
+
+            modelBuilder.Entity("CareerManager.Models.CareerPlanEvidence", b =>
+                {
+                    b.Property<string>("OwnerId")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<int>("CareerPlanId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("CareerEntryId")
+                        .HasColumnType("int");
+
+                    b.HasKey("OwnerId", "CareerPlanId", "CareerEntryId");
+
+                    b.HasIndex("OwnerId", "CareerEntryId");
+
+                    b.ToTable("CareerPlanEvidence");
+                });
+
             modelBuilder.Entity("CareerManager.Models.CareerProfile", b =>
                 {
                     b.Property<int>("Id")
@@ -299,6 +391,38 @@ namespace CareerManager.Data.Migrations
                     b.Navigation("Owner");
                 });
 
+            modelBuilder.Entity("CareerManager.Models.CareerPlan", b =>
+                {
+                    b.HasOne("CareerManager.Models.CareerOwner", "Owner")
+                        .WithMany("Plans")
+                        .HasForeignKey("OwnerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Owner");
+                });
+
+            modelBuilder.Entity("CareerManager.Models.CareerPlanEvidence", b =>
+                {
+                    b.HasOne("CareerManager.Models.CareerEntry", "Entry")
+                        .WithMany()
+                        .HasForeignKey("OwnerId", "CareerEntryId")
+                        .HasPrincipalKey("OwnerId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("CareerManager.Models.CareerPlan", "Plan")
+                        .WithMany("EvidenceReferences")
+                        .HasForeignKey("OwnerId", "CareerPlanId")
+                        .HasPrincipalKey("OwnerId", "Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Entry");
+
+                    b.Navigation("Plan");
+                });
+
             modelBuilder.Entity("CareerManager.Models.CareerProfile", b =>
                 {
                     b.HasOne("CareerManager.Models.CareerOwner", "Owner")
@@ -326,7 +450,14 @@ namespace CareerManager.Data.Migrations
 
                     b.Navigation("Opportunities");
 
+                    b.Navigation("Plans");
+
                     b.Navigation("Profiles");
+                });
+
+            modelBuilder.Entity("CareerManager.Models.CareerPlan", b =>
+                {
+                    b.Navigation("EvidenceReferences");
                 });
 
             modelBuilder.Entity("CareerManager.Models.CareerProfile", b =>

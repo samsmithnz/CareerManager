@@ -1,0 +1,41 @@
+@model CareerManager.ViewModels.CareerPlanGeneratedReviewViewModel
+
+@{
+    ViewData["Title"] = "Review generated plan suggestions";
+}
+
+<h1>Review generated plan suggestions</h1>
+<p>Nothing has been saved yet. Review these inferred suggestions separately from the factual evidence before choosing whether to replace the current generated sections.</p>
+
+<section class="mb-4">
+    <h2 class="h5">Factual evidence processed</h2>
+    @foreach (var entry in Model.SelectedEvidence)
+    {
+        <article class="border rounded p-3 mb-2">
+            <h3 class="h6">@entry.Category: @entry.Title</h3>
+            <p class="mb-0">@entry.Description</p>
+        </article>
+    }
+</section>
+
+<div class="row g-3">
+    <section class="col-md-6">
+        <h2 class="h5">Suggested evidence gaps — not facts</h2>
+        <pre class="text-wrap">@Model.EvidenceGaps</pre>
+    </section>
+    <section class="col-md-6">
+        <h2 class="h5">Recommendations and possible alignments — not facts</h2>
+        <pre class="text-wrap">@Model.Recommendations</pre>
+    </section>
+    <section class="col-12">
+        <h2 class="h5">Suggested next actions</h2>
+        <pre class="text-wrap">@Model.NextActions</pre>
+    </section>
+</div>
+
+<p class="alert alert-warning">Replacing these sections updates the current plan in place, creates no historical snapshot, and clears any existing approval. Your target roles, strengths, interests, and progress remain unchanged.</p>
+<form asp-action="ReplaceGenerated" asp-route-id="@Model.Plan.Id" method="post">
+    <input type="hidden" name="ReplaceToken" value="@Model.ReplaceToken" />
+    <button class="btn btn-primary" type="submit">Replace generated sections with this reviewed result</button>
+    <a class="btn btn-outline-secondary" asp-action="Edit" asp-route-id="@Model.Plan.Id">Keep current saved plan</a>
+</form>

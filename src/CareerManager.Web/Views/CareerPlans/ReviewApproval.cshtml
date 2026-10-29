@@ -1,0 +1,61 @@
+@model CareerManager.ViewModels.CareerPlanApprovalViewModel
+
+@{
+    ViewData["Title"] = "Review career plan";
+}
+
+<h1>Review current career plan</h1>
+<p>Approval applies only to the current plan content. Facts come from the selected career records; gaps and recommendations are inferences and suggestions.</p>
+
+<section class="mb-4">
+    <h2 class="h5">Owner-entered planning</h2>
+    <h3 class="h6">Target roles</h3>
+    <pre class="text-wrap">@Model.Plan.TargetRoles</pre>
+    <h3 class="h6">Strengths</h3>
+    <pre class="text-wrap">@Model.Plan.Strengths</pre>
+    <h3 class="h6">Interests</h3>
+    <pre class="text-wrap">@Model.Plan.Interests</pre>
+    <h3 class="h6">Next actions</h3>
+    <pre class="text-wrap">@Model.Plan.NextActions</pre>
+    <h3 class="h6">Progress</h3>
+    <pre class="text-wrap">@Model.Plan.Progress</pre>
+</section>
+<section class="mb-4">
+    <h2 class="h5">Factual evidence references</h2>
+    @if (Model.SelectedEvidence.Count == 0)
+    {
+        <p>No evidence is selected.</p>
+    }
+    @foreach (var entry in Model.SelectedEvidence)
+    {
+        <article class="border rounded p-3 mb-2">
+            <h3 class="h6">@entry.Category: @entry.Title</h3>
+            <p class="mb-0">@entry.Description</p>
+        </article>
+    }
+</section>
+<section class="mb-4">
+    <h2 class="h5">Inferred gaps and recommendations — not facts</h2>
+    <h3 class="h6">Evidence gaps</h3>
+    <pre class="text-wrap">@Model.Plan.EvidenceGaps</pre>
+    <h3 class="h6">Recommendations and uncertainties</h3>
+    <pre class="text-wrap">@Model.Plan.Recommendations</pre>
+</section>
+
+@if (Model.IsApproved)
+{
+    <p class="alert alert-success">This current content is already approved.</p>
+}
+<form asp-action="Approve" asp-route-id="@Model.Plan.Id" method="post">
+    <div asp-validation-summary="All" class="text-danger" role="alert"></div>
+    <input type="hidden" asp-for="Input.ConcurrencyToken" />
+    <div class="form-check mb-3">
+        <input class="form-check-input" type="checkbox" asp-for="Input.ContentReviewed" />
+        <label class="form-check-label" asp-for="Input.ContentReviewed">
+            I reviewed the current plan and its selected evidence, and understand that suggestions are not verified facts.
+        </label>
+        <span asp-validation-for="Input.ContentReviewed" class="text-danger"></span>
+    </div>
+    <button class="btn btn-primary" type="submit">Approve current plan</button>
+    <a class="btn btn-outline-secondary" asp-action="Edit" asp-route-id="@Model.Plan.Id">Return to edit</a>
+</form>

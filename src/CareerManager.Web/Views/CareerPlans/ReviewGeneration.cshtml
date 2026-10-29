@@ -1,0 +1,62 @@
+@model CareerManager.ViewModels.CareerPlanGenerationReviewViewModel
+
+@{
+    ViewData["Title"] = "Review career plan generation";
+}
+
+<h1>Review career plan generation</h1>
+<p>Review exactly the information that will be processed. Generation will not change your saved plan. A generated result must be reviewed and explicitly replaced.</p>
+
+@if (Model.SendsDataExternally)
+{
+    <p class="alert alert-warning" role="alert">
+        This request will send the listed information to @Model.ProviderName using deployment @Model.ModelName in @Model.Region.
+        No other career content is included.
+    </p>
+}
+else
+{
+    <p>This uses the local provider @Model.ProviderName (@Model.ModelName) in the application deployment region; nothing is sent to an external AI service.</p>
+}
+
+<section class="mb-4">
+    <h2 class="h5">Planning information to be processed</h2>
+    <dl>
+        <dt>Target roles</dt>
+        <dd><pre class="text-wrap">@Model.Plan.TargetRoles</pre></dd>
+        <dt>Strengths</dt>
+        <dd><pre class="text-wrap">@Model.Plan.Strengths</pre></dd>
+        <dt>Interests</dt>
+        <dd><pre class="text-wrap">@Model.Plan.Interests</pre></dd>
+    </dl>
+</section>
+
+<section class="mb-4">
+    <h2 class="h5">Selected factual evidence</h2>
+    @if (Model.SelectedEvidence.Count == 0)
+    {
+        <p>No evidence will be processed. Any resulting gaps are suggestions, not factual claims.</p>
+    }
+    @foreach (var entry in Model.SelectedEvidence)
+    {
+        <article class="border rounded p-3 mb-2">
+            <h3 class="h6">@entry.Category: @entry.Title</h3>
+            <p class="mb-0">@entry.Description</p>
+        </article>
+    }
+</section>
+
+<form asp-action="Generate" asp-route-id="@Model.Plan.Id" method="post">
+    <div asp-validation-summary="All" class="text-danger" role="alert"></div>
+    <input type="hidden" name="PreviewToken" value="@Model.PreviewToken" />
+    <div class="form-check mb-3">
+        <input class="form-check-input" type="checkbox" name="Consent" value="true" id="planGenerationConsent"
+               checked="@(Model.Consent ? "checked" : null)" />
+        <label class="form-check-label" for="planGenerationConsent">
+            I reviewed the target roles, strengths, interests, and selected evidence above and consent to processing only those items for career planning.
+        </label>
+    </div>
+    <p class="text-muted">Generated gaps and recommendations remain suggestions. They are never written into factual career records or approved automatically.</p>
+    <button class="btn btn-primary" type="submit">Consent and generate review</button>
+    <a class="btn btn-outline-secondary" asp-action="Edit" asp-route-id="@Model.Plan.Id">Cancel</a>
+</form>
