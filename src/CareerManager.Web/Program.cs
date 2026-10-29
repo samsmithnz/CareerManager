@@ -34,6 +34,9 @@ if (seedSyntheticData)
 var connectionString = DatabaseConfiguration.GetRequiredConnectionString(builder.Configuration);
 builder.Services.AddDbContext<CareerManagerContext>(options => options.UseSqlServer(connectionString));
 builder.Services.AddControllersWithViews();
+builder.Services.AddScoped<OwnerDataService>();
+builder.Services.AddSingleton<OwnerRequestLock>();
+builder.Services.AddTransient<OwnerRequestSerializationMiddleware>();
 var generationProvider = builder.Configuration["ApplicationGeneration:Provider"] ?? "Local";
 if (string.Equals(generationProvider, "AzureOpenAI", StringComparison.OrdinalIgnoreCase))
 {
@@ -119,6 +122,7 @@ app.UseHttpsRedirection();
 app.UseRouting();
 
 app.UseAuthentication();
+app.UseMiddleware<OwnerRequestSerializationMiddleware>();
 app.UseRateLimiter();
 app.UseAuthorization();
 

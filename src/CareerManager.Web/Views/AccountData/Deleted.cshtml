@@ -1,0 +1,10 @@
+@model CareerManager.ViewModels.DataDeletionCompletedViewModel
+@{
+    ViewData["Title"] = "Application data deleted";
+}
+
+<h1>Application data deleted</h1>
+<p>Your saved application content has been deleted. Your owner registration and allowlist entry remain so you can start fresh.</p>
+<p>Only a content-free deletion audit event is retained. Azure service-managed backups or provider copies may retain data until their normal expiration, and downloaded exports cannot be recalled.</p>
+<p>Request ID: <code>@Model.RequestId</code></p>
+<a class="btn btn-primary" asp-controller="Home" asp-action="Index">Continue</a>

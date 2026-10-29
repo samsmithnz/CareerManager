@@ -1,0 +1,35 @@
+@model CareerManager.ViewModels.DeleteAllDataInputModel
+@{
+    ViewData["Title"] = "Delete all application data";
+}
+
+<h1>Delete all application data</h1>
+<div class="alert alert-danger" role="alert">
+    This permanently deletes saved profiles, career evidence, opportunities, documents, comparisons, plans, generated drafts, and their evidence references. The owner account and configured allowlist remain.
+</div>
+<p>Azure service-managed backups or provider copies may retain data until their normal expiration. This action cannot recall exports already downloaded.</p>
+
+@if (Model.ErrorMessage is not null)
+{
+    <div class="alert alert-warning" role="alert">
+        <p>@Model.ErrorMessage</p>
+        @if (Model.RequestId.HasValue)
+        {
+            <p>Request ID: <code>@Model.RequestId</code></p>
+        }
+    </div>
+}
+
+<form asp-action="DeleteAll" method="post">
+    <div asp-validation-summary="All" class="text-danger"></div>
+    <div class="form-check mb-3">
+        <input asp-for="ConfirmDeletion" class="form-check-input" />
+        <label asp-for="ConfirmDeletion" class="form-check-label">I understand this permanently deletes my application data.</label>
+    </div>
+    <div class="mb-3">
+        <label asp-for="ConfirmationText" class="form-label">Type DELETE ALL MY DATA to confirm</label>
+        <input asp-for="ConfirmationText" class="form-control" autocomplete="off" />
+    </div>
+    <button type="submit" class="btn btn-danger">Delete all my data</button>
+    <a class="btn btn-secondary" asp-action="Index">Cancel</a>
+</form>

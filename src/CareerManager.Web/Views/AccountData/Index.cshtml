@@ -1,0 +1,9 @@
+@{
+    ViewData["Title"] = "Your data";
+}
+
+<h1>Your data</h1>
+<p>Export your saved CareerManager data or permanently delete the application content associated with this owner account.</p>
+<p><a class="btn btn-primary" asp-action="Export">Download full-data export (JSON)</a></p>
+<p><a class="btn btn-outline-danger" asp-action="DeleteAll">Delete all application data</a></p>
+<p>Deletion does not delete your Microsoft account or remove the configured owner allowlist. Service-managed Azure backups or provider copies may retain data until their normal expiration; this action does not purge them. Downloaded exports are separate copies and cannot be recalled.</p>

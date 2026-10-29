@@ -13,6 +13,7 @@ public sealed class CareerManagerContext(DbContextOptions<CareerManagerContext> 
     public DbSet<CareerDocumentEvidence> CareerDocumentEvidence => Set<CareerDocumentEvidence>();
     public DbSet<CareerPlan> CareerPlans => Set<CareerPlan>();
     public DbSet<CareerPlanEvidence> CareerPlanEvidence => Set<CareerPlanEvidence>();
+    public DbSet<DataDeletionAuditEvent> DataDeletionAuditEvents => Set<DataDeletionAuditEvent>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -153,6 +154,12 @@ public sealed class CareerManagerContext(DbContextOptions<CareerManagerContext> 
                 .HasPrincipalKey(entry => new { entry.OwnerId, entry.Id })
                 .OnDelete(DeleteBehavior.Restrict);
             entity.HasIndex(reference => new { reference.OwnerId, reference.CareerEntryId });
+        });
+
+        modelBuilder.Entity<DataDeletionAuditEvent>(entity =>
+        {
+            entity.HasKey(auditEvent => auditEvent.RequestId);
+            entity.Property(auditEvent => auditEvent.Outcome).HasMaxLength(20).IsRequired();
         });
     }
 }
