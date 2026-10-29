@@ -8,7 +8,7 @@ CareerManager currently has no persisted private binaries or blob storage. PDF a
 
 ## Delete all application data
 
-The owner-only, CSRF-protected delete action removes all of that owner's application content in one database transaction. A content-free audit record is inserted with a random request ID, UTC timestamp, and outcome in the same database. It contains no owner identifier, email, deleted content, prompt, response, or token. Audit records are retained in the protected application database until an operator removes them; there is no user-facing audit endpoint. Database administrators and the application database identity can access this table.
+The owner-only, CSRF-protected delete action removes all of that owner's application content in one database transaction. A content-free audit record is inserted with a random request ID, UTC timestamp, and outcome in the same database. It contains no owner identifier, email, deleted content, prompt, response, or token. Audit records are retained in the protected application database until an operator removes them; there is no user-facing audit endpoint. The deployed runtime role should have insert-only access to this table; database administrators can access it.
 
 Owner requests are serialized using a SQL Server application lock (and an in-process lock) so an in-flight generation, export, or other request finishes before deletion runs. Deletion leaves the owner registration and configured allowlist intact, allowing that owner to start fresh. SQL changes and the successful audit record commit together; a failed operation rolls back and is safe to retry.
 
