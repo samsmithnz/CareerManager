@@ -41,7 +41,8 @@ public sealed class ApplicationDraftIndexViewModel
 public sealed record ApplicationDraftRowViewModel(
     CareerDocument Document,
     IReadOnlyList<string> EvidenceTitles,
-    int MissingEvidenceCount);
+    int MissingEvidenceCount,
+    bool IsApproved);
 
 public sealed class ApplicationDraftEditInputModel
 {
@@ -62,7 +63,18 @@ public sealed class ApplicationDraftEditViewModel
     public int? OpportunityId { get; init; }
     public required CareerDocumentType Type { get; init; }
     public required ApplicationDraftEditInputModel Input { get; init; }
+    public required ApplicationDraftApprovalInputModel ApprovalInput { get; init; }
+    public DateTime? ApprovedAtUtc { get; init; }
+    public bool IsApproved { get; init; }
+    public bool CanExport { get; init; }
     public required IReadOnlyList<EvidenceReferenceViewModel> EvidenceReferences { get; init; }
+}
+
+public sealed class ApplicationDraftApprovalInputModel
+{
+    public Guid ConcurrencyToken { get; set; }
+    public bool FactualClaimsReviewed { get; set; }
+    public bool UnsupportedClaimsResolved { get; set; }
 }
 
 public sealed record EvidenceReferenceViewModel(int Id, string? Title, bool Missing);

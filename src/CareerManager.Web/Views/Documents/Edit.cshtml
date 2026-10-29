@@ -1,11 +1,18 @@
 @model CareerManager.ViewModels.ApplicationDraftEditViewModel
 
 @{
-    ViewData["Title"] = "Edit application draft";
+    ViewData["Title"] = "Edit application document";
 }
 
-<h1>Edit application draft</h1>
-<p class="text-muted">@Model.Type — draft only; editing does not approve or finalize it.</p>
+<h1>Edit @Model.Type</h1>
+@if (Model.IsApproved)
+{
+    <p class="text-success">Approved @Model.ApprovedAtUtc?.ToString("u"). Saving changes returns this document to draft.</p>
+}
+else
+{
+    <p class="text-muted">Draft — saving or exporting does not approve this document.</p>
+}
 @if (Model.EvidenceReferences.Any(reference => reference.Missing))
 {
     <div class="alert alert-warning" role="alert">
@@ -53,3 +60,15 @@
     <button type="submit" class="btn btn-primary">Save draft</button>
     <a asp-action="Index" asp-route-opportunityId="@Model.OpportunityId" class="btn btn-secondary">Cancel</a>
 </form>
+@if (Model.CanExport)
+{
+    <section class="mt-4">
+        <h2 class="h5">Review and export the saved version</h2>
+        <p>Saving or downloading never counts as approval. Evidence references do not prove factual claims.</p>
+        <a asp-action="Review" asp-route-id="@Model.Id" class="btn btn-outline-primary">Review factual claims</a>
+        <a asp-action="Export" asp-route-id="@Model.Id" asp-route-format="pdf"
+           asp-route-concurrencyToken="@Model.Input.ConcurrencyToken" class="btn btn-outline-secondary">Download PDF</a>
+        <a asp-action="Export" asp-route-id="@Model.Id" asp-route-format="docx"
+           asp-route-concurrencyToken="@Model.Input.ConcurrencyToken" class="btn btn-outline-secondary">Download DOCX</a>
+    </section>
+}

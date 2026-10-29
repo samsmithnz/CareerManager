@@ -79,6 +79,7 @@ public sealed class CareerManagerContext(DbContextOptions<CareerManagerContext> 
             entity.Property(document => document.Text).HasMaxLength(12000).IsRequired();
             entity.Property(document => document.Type).HasConversion<string>().HasMaxLength(20);
             entity.Property(document => document.ConcurrencyToken).IsConcurrencyToken();
+            entity.Property(document => document.ApprovedContentHash).HasMaxLength(64);
             entity.HasAlternateKey(document => new { document.OwnerId, document.Id });
             entity.HasOne(document => document.Owner)
                 .WithMany(owner => owner.Documents)

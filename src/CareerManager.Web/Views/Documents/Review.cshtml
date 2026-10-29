@@ -1,0 +1,59 @@
+@model CareerManager.ViewModels.ApplicationDraftEditViewModel
+
+@{
+    ViewData["Title"] = "Review factual claims";
+}
+
+<h1>Review @Model.Type</h1>
+<p><strong>@Model.Input.Title</strong></p>
+<p>Check every factual statement in the saved content. Attached evidence is a reference only; it does not prove a claim.</p>
+@if (Model.EvidenceReferences.Any(reference => reference.Missing))
+{
+    <div class="alert alert-warning" role="alert">
+        Some referenced evidence has been removed. Resolve any unsupported claims before approval.
+    </div>
+}
+<pre class="text-wrap border rounded p-3">@Model.Input.Text</pre>
+<section class="mb-3">
+    <h2 class="h5">Evidence references</h2>
+    @if (Model.EvidenceReferences.Count == 0)
+    {
+        <p>No evidence references are attached. Verify each claim independently.</p>
+    }
+    else
+    {
+        <ul>
+            @foreach (var reference in Model.EvidenceReferences)
+            {
+                <li>
+                    @if (reference.Missing)
+                    {
+                        <span class="text-danger">Evidence #@reference.Id was removed; review linked claims.</span>
+                    }
+                    else
+                    {
+                        <span>@reference.Title (reference only; not proof of a claim)</span>
+                    }
+                </li>
+            }
+        </ul>
+    }
+</section>
+<form asp-action="Approve" asp-route-id="@Model.Id" method="post">
+    <div asp-validation-summary="All" class="text-danger" role="alert"></div>
+    <input asp-for="ApprovalInput.ConcurrencyToken" type="hidden" />
+    <div class="form-check mb-2">
+        <input asp-for="ApprovalInput.FactualClaimsReviewed" class="form-check-input" />
+        <label asp-for="ApprovalInput.FactualClaimsReviewed" class="form-check-label">
+            I reviewed every factual claim in this saved document against the underlying evidence.
+        </label>
+    </div>
+    <div class="form-check mb-3">
+        <input asp-for="ApprovalInput.UnsupportedClaimsResolved" class="form-check-input" />
+        <label asp-for="ApprovalInput.UnsupportedClaimsResolved" class="form-check-label">
+            I removed or corrected unsupported claims, or confirmed there are none.
+        </label>
+    </div>
+    <button type="submit" class="btn btn-primary">Approve this saved version</button>
+    <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-secondary">Back to edit</a>
+</form>
