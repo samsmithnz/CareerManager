@@ -337,6 +337,25 @@ namespace CareerManager.Data.Migrations
                     b.ToTable("CareerProfiles");
                 });
 
+            modelBuilder.Entity("CareerManager.Models.DataDeletionAuditEvent", b =>
+                {
+                    b.Property<Guid>("RequestId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("OccurredAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Outcome")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.HasKey("RequestId");
+
+                    b.ToTable("DataDeletionAuditEvents");
+                });
+
             modelBuilder.Entity("CareerManager.Models.CareerDocument", b =>
                 {
                     b.HasOne("CareerManager.Models.CareerOwner", "Owner")
