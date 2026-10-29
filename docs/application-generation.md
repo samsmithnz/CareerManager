@@ -21,6 +21,14 @@ The remote service is only enabled when an administrator configures the Azure en
 
 These application-level request and token limits are not a monetary hard cap. Before enabling remote mode, also configure an Azure-side quota and spending alert/limit appropriate to the deployment. The local provider has no external usage cost.
 
+## Review, approval, and document exports
+
+Resume and cover-letter drafts can be explicitly approved after the owner reviews every factual claim and confirms unsupported claims have been resolved. Evidence links are references only and are not treated as proof. Approval is bound to the exact saved title and text, and editing clears it. Approval and export both require the current document concurrency token.
+
+PDF and DOCX files are generated on demand from the current saved content through owner-authorized MVC endpoints. Exports are not persisted, so no blob account, public URL, retained artifact, or export cleanup is required. Stale links and changes detected during generation are rejected, and downloads are marked `no-store`. Drafts can still be exported; exporting does not approve them.
+
+The PDF uses PDFsharp with a bundled DejaVu Sans font (Bitstream Vera Font License; notice at `src/CareerManager.Web/Fonts/DejaVuSans.LICENSE.txt`), and the DOCX uses the Open XML SDK. Both use a plain, readable layout. Apply the `AddDocumentApproval` database migration before using approval. Export failures return an error without changing saved document content.
+
 ## Setup
 
 No AI account, API key, deployment, or paid model call is required for local generation. To enable remote generation, provision and authorize the selected Azure OpenAI East US 2 deployment, review its current handling terms, configure the settings above and the required quota, then explicitly enable it. Confirm current `gpt-4o-mini` availability and capacity in Azure before provisioning. Apply the `AddApplicationDrafts` database migration to the authorized database before using generated drafts. Automated tests use local deterministic/fake providers only.

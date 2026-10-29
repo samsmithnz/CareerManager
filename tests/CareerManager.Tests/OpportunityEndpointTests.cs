@@ -52,9 +52,23 @@ public sealed class OpportunityEndpointTests
 
             var compareResponse = await client.GetAsync("/ApplicationDrafts/Compare/1");
             var documentResponse = await client.GetAsync("/Documents/Edit/1");
+            var reviewResponse = await client.GetAsync("/Documents/Review/1");
+            var exportResponse = await client.GetAsync(
+                $"/Documents/Export/1?format=pdf&concurrencyToken={Guid.Empty}");
+            var approvalResponse = await client.PostAsync(
+                "/Documents/Approve/1",
+                new FormUrlEncodedContent(
+                [
+                    new KeyValuePair<string, string>("ApprovalInput.ConcurrencyToken", Guid.Empty.ToString()),
+                    new KeyValuePair<string, string>("ApprovalInput.FactualClaimsReviewed", "true"),
+                    new KeyValuePair<string, string>("ApprovalInput.UnsupportedClaimsResolved", "true")
+                ]));
 
             Assert.Equal(System.Net.HttpStatusCode.Unauthorized, compareResponse.StatusCode);
             Assert.Equal(System.Net.HttpStatusCode.Unauthorized, documentResponse.StatusCode);
+            Assert.Equal(System.Net.HttpStatusCode.Unauthorized, reviewResponse.StatusCode);
+            Assert.Equal(System.Net.HttpStatusCode.Unauthorized, exportResponse.StatusCode);
+            Assert.Equal(System.Net.HttpStatusCode.Unauthorized, approvalResponse.StatusCode);
         }
         finally
         {

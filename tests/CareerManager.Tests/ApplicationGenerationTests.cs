@@ -9,6 +9,9 @@ using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging.Abstractions;
+using DocumentFormat.OpenXml.Packaging;
+using PdfSharp.Pdf.IO;
 
 namespace CareerManager.Tests;
 
@@ -381,6 +384,140 @@ public sealed class ApplicationGenerationTests
         var controller = CreateDocumentsController(context, "owner-b");
 
         Assert.IsType<NotFoundResult>(await controller.Edit(document.Id, default));
+        Assert.IsType<NotFoundResult>(await controller.Review(document.Id, default));
+        Assert.IsType<NotFoundResult>(await controller.Approve(document.Id, new ApplicationDraftApprovalInputModel
+        {
+            ConcurrencyToken = document.ConcurrencyToken,
+            FactualClaimsReviewed = true,
+            UnsupportedClaimsResolved = true
+        }, default));
+        Assert.IsType<NotFoundResult>(
+            await controller.Export(document.Id, "pdf", document.ConcurrencyToken, default));
+    }
+
+    [Fact]
+    public async Task ApprovalRequiresFactualReviewAndEditingClearsIt()
+    {
+        await using var context = CreateContext();
+        var (owner, opportunity, _) = await SeedOwnerOpportunityAndEvidence(context);
+        var document = new CareerDocument
+        {
+            OwnerId = owner.Id,
+            OpportunityId = opportunity.Id,
+            Title = "Current resume",
+            Text = "I built the reporting dashboard.",
+            Type = CareerDocumentType.Resume
+        };
+        context.CareerDocuments.Add(document);
+        await context.SaveChangesAsync();
+        var controller = CreateDocumentsController(context, owner.Id);
+        var originalToken = document.ConcurrencyToken;
+
+        var incompleteReview = await controller.Approve(document.Id, new ApplicationDraftApprovalInputModel
+        {
+            ConcurrencyToken = originalToken
+        }, default);
+
+        Assert.IsType<ViewResult>(incompleteReview);
+        Assert.Null(document.ApprovedAtUtc);
+
+        document.Text = "The current saved version changed after review.";
+        document.ConcurrencyToken = Guid.NewGuid();
+        await context.SaveChangesAsync();
+        var staleApproval = await CreateDocumentsController(context, owner.Id).Approve(document.Id, new ApplicationDraftApprovalInputModel
+        {
+            ConcurrencyToken = originalToken,
+            FactualClaimsReviewed = true,
+            UnsupportedClaimsResolved = true
+        }, default);
+        Assert.IsType<ConflictObjectResult>(staleApproval);
+        Assert.Null(document.ApprovedAtUtc);
+
+        var approved = await CreateDocumentsController(context, owner.Id).Approve(document.Id, new ApplicationDraftApprovalInputModel
+        {
+            ConcurrencyToken = document.ConcurrencyToken,
+            FactualClaimsReviewed = true,
+            UnsupportedClaimsResolved = true
+        }, default);
+
+        Assert.IsType<RedirectToActionResult>(approved);
+        Assert.NotNull(document.ApprovedAtUtc);
+        Assert.Equal(
+            Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(
+                System.Text.Encoding.UTF8.GetBytes($"{document.Title}\0{document.Text}"))),
+            document.ApprovedContentHash);
+        Assert.NotEqual(originalToken, document.ConcurrencyToken);
+
+        var edited = await CreateDocumentsController(context, owner.Id).Edit(document.Id, new ApplicationDraftEditInputModel
+        {
+            Title = "Updated resume",
+            Text = "I updated the reporting dashboard.",
+            ConcurrencyToken = document.ConcurrencyToken
+        }, default);
+
+        Assert.IsType<RedirectToActionResult>(edited);
+        Assert.Null(document.ApprovedAtUtc);
+        Assert.Null(document.ApprovedContentHash);
+    }
+
+    [Theory]
+    [InlineData(CareerDocumentType.Resume)]
+    [InlineData(CareerDocumentType.CoverLetter)]
+    public async Task ExportUsesCurrentOwnerScopedDraftForPdfAndDocx(CareerDocumentType type)
+    {
+        await using var context = CreateContext();
+        var (owner, opportunity, _) = await SeedOwnerOpportunityAndEvidence(context);
+        var document = new CareerDocument
+        {
+            OwnerId = owner.Id,
+            OpportunityId = opportunity.Id,
+            Title = "Resume",
+            Text = string.Join(
+                '\n',
+                Enumerable.Repeat("Résumé — a representative long paragraph wraps cleanly and retains selectable text.", 60)),
+            Type = type
+        };
+        context.CareerDocuments.Add(document);
+        context.CareerOwners.Add(new CareerOwner { Id = "owner-b" });
+        await context.SaveChangesAsync();
+
+        var ownerController = CreateDocumentsController(context, owner.Id);
+        var stale = await ownerController.Export(document.Id, "pdf", Guid.NewGuid(), default);
+        Assert.IsType<ConflictObjectResult>(stale);
+
+        _ = DocumentExportService.GeneratePdf(document);
+        var pdf = Assert.IsType<FileContentResult>(
+            await ownerController.Export(document.Id, "pdf", document.ConcurrencyToken, default));
+        Assert.Equal("application/pdf", pdf.ContentType);
+        Assert.StartsWith("%PDF-", System.Text.Encoding.ASCII.GetString(pdf.FileContents));
+        using (var parsedPdf = PdfReader.Open(
+            new MemoryStream(pdf.FileContents),
+            PdfDocumentOpenMode.Import))
+        {
+            Assert.True(parsedPdf.Pages.Count > 1);
+            var firstPageContent = parsedPdf.Pages[0].Contents.CreateSingleContent().Stream.UnfilteredValue;
+            Assert.Contains("Tj", System.Text.Encoding.ASCII.GetString(firstPageContent));
+        }
+
+        var docx = Assert.IsType<FileContentResult>(
+            await ownerController.Export(document.Id, "docx", document.ConcurrencyToken, default));
+        Assert.Equal("application/vnd.openxmlformats-officedocument.wordprocessingml.document", docx.ContentType);
+        using (var package = WordprocessingDocument.Open(new MemoryStream(docx.FileContents), false))
+        {
+            var paragraphs = package.MainDocumentPart!.Document!.Body!
+                .Elements<DocumentFormat.OpenXml.Wordprocessing.Paragraph>()
+                .Select(paragraph => paragraph.InnerText)
+                .ToArray();
+            Assert.Equal("Resume", paragraphs[0]);
+            Assert.Equal(61, paragraphs.Length);
+            Assert.Equal(
+                "Résumé — a representative long paragraph wraps cleanly and retains selectable text.",
+                paragraphs[1]);
+        }
+
+        var otherOwner = CreateDocumentsController(context, "owner-b");
+        Assert.IsType<NotFoundResult>(
+            await otherOwner.Export(document.Id, "pdf", document.ConcurrencyToken, default));
     }
 
     private static ApplicationGenerationRequest RequestWithEvidence() =>
@@ -433,7 +570,7 @@ public sealed class ApplicationGenerationTests
 
     private static DocumentsController CreateDocumentsController(CareerManagerContext context, string ownerId)
     {
-        var controller = new DocumentsController(context);
+        var controller = new DocumentsController(context, NullLogger<DocumentsController>.Instance);
         SetOwner(controller, ownerId);
         return controller;
     }

@@ -8,11 +8,20 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="Fonts/DejaVuSans.ttf" LogicalName="CareerManager.Web.Fonts.DejaVuSans.ttf" />
+    <None Update="Fonts/DejaVuSans.LICENSE.txt"
+          CopyToOutputDirectory="PreserveNewest"
+          CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="DocumentFormat.OpenXml" Version="3.5.1" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.14">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.14" />
+    <PackageReference Include="PDFsharp" Version="6.2.4" />
     <PackageReference Include="System.Security.Cryptography.Pkcs" Version="10.0.14">
       <ExcludeAssets>all</ExcludeAssets>
       <PrivateAssets>all</PrivateAssets>
