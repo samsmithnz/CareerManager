@@ -6,4 +6,5 @@ public sealed class CareerOwner
     public ICollection<CareerProfile> Profiles { get; } = [];
     public ICollection<CareerOpportunity> Opportunities { get; } = [];
     public ICollection<CareerDocument> Documents { get; } = [];
+    public ICollection<CareerPlan> Plans { get; } = [];
 }

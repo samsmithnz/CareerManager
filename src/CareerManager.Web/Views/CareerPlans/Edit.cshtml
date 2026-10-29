@@ -1,0 +1,96 @@
+@model CareerManager.ViewModels.CareerPlanEditViewModel
+
+@{
+    ViewData["Title"] = Model.Id.HasValue ? "Edit career plan" : "Create career plan";
+    var saveAction = Model.Id.HasValue ? "Edit" : "Create";
+}
+
+<h1>@ViewData["Title"]</h1>
+<p>Keep your own goals and reflections editable. Selected career records are factual evidence; generated gaps and recommendations are suggestions, not facts.</p>
+
+@if (Model.IsApproved)
+{
+    <p class="alert alert-success">The current saved content is approved. Saving changes will return it to draft.</p>
+}
+else if (Model.Id.HasValue)
+{
+    <p class="alert alert-secondary">Draft — this plan has not been approved.</p>
+}
+
+<form asp-action="@saveAction" asp-route-id="@Model.Id" method="post">
+    <div asp-validation-summary="All" class="text-danger" role="alert"></div>
+    @if (Model.Id.HasValue)
+    {
+        <input type="hidden" asp-for="Input.ConcurrencyToken" />
+    }
+
+    <div class="mb-3">
+        <label asp-for="Input.TargetRoles" class="form-label">Target roles</label>
+        <textarea asp-for="Input.TargetRoles" class="form-control" rows="3"></textarea>
+        <span asp-validation-for="Input.TargetRoles" class="text-danger"></span>
+    </div>
+    <div class="mb-3">
+        <label asp-for="Input.Strengths" class="form-label">Strengths to build on</label>
+        <textarea asp-for="Input.Strengths" class="form-control" rows="3"></textarea>
+        <span asp-validation-for="Input.Strengths" class="text-danger"></span>
+    </div>
+    <div class="mb-3">
+        <label asp-for="Input.Interests" class="form-label">Interests</label>
+        <textarea asp-for="Input.Interests" class="form-control" rows="3"></textarea>
+        <span asp-validation-for="Input.Interests" class="text-danger"></span>
+    </div>
+
+    <fieldset class="mb-3">
+        <legend class="h5">Factual career evidence</legend>
+        <p class="small text-secondary">Select up to 10 records that support this plan. References do not turn recommendations into verified facts.</p>
+        @if (Model.AvailableEvidence.Count == 0)
+        {
+            <p>No saved career evidence is available.</p>
+        }
+        @foreach (var entry in Model.AvailableEvidence)
+        {
+            <div class="form-check border rounded p-3 mb-2">
+                <input class="form-check-input" type="checkbox" name="Input.SelectedEvidenceIds"
+                       id="evidence-@entry.Id" value="@entry.Id"
+                       checked="@(Model.SelectedEvidenceIds.Contains(entry.Id) ? "checked" : null)" />
+                <label class="form-check-label" for="evidence-@entry.Id">
+                    <strong>@entry.Category: @entry.Title</strong>
+                    <span class="d-block">@entry.Description</span>
+                </label>
+            </div>
+        }
+    </fieldset>
+
+    <div class="mb-3">
+        <label asp-for="Input.EvidenceGaps" class="form-label">Inferred evidence gaps (suggestions, not established facts)</label>
+        <textarea asp-for="Input.EvidenceGaps" class="form-control" rows="4"></textarea>
+        <span asp-validation-for="Input.EvidenceGaps" class="text-danger"></span>
+    </div>
+    <div class="mb-3">
+        <label asp-for="Input.Recommendations" class="form-label">Recommendations and uncertainties (not facts)</label>
+        <textarea asp-for="Input.Recommendations" class="form-control" rows="4"></textarea>
+        <span asp-validation-for="Input.Recommendations" class="text-danger"></span>
+    </div>
+    <div class="mb-3">
+        <label asp-for="Input.NextActions" class="form-label">Next actions (one per line)</label>
+        <textarea asp-for="Input.NextActions" class="form-control" rows="4"></textarea>
+        <span asp-validation-for="Input.NextActions" class="text-danger"></span>
+    </div>
+    <div class="mb-3">
+        <label asp-for="Input.Progress" class="form-label">Progress and outcomes</label>
+        <textarea asp-for="Input.Progress" class="form-control" rows="4"></textarea>
+        <span asp-validation-for="Input.Progress" class="text-danger"></span>
+    </div>
+
+    <button class="btn btn-primary" type="submit">Save plan</button>
+    <a class="btn btn-outline-secondary" asp-action="Index">Cancel</a>
+</form>
+
+@if (Model.Id.HasValue)
+{
+    <hr />
+    <h2 class="h4">Review and planning actions</h2>
+    <p>Save your changes before generating. Generation uses only the target roles, strengths, interests, and evidence selected above.</p>
+    <a class="btn btn-outline-primary me-2" asp-action="ReviewGeneration" asp-route-id="@Model.Id">Review regeneration</a>
+    <a class="btn btn-outline-primary me-2" asp-action="ReviewApproval" asp-route-id="@Model.Id">Review and approve current plan</a>
+}

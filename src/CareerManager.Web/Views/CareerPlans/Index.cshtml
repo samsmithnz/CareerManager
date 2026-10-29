@@ -1,0 +1,36 @@
+@model CareerManager.ViewModels.CareerPlanIndexViewModel
+
+@{
+    ViewData["Title"] = "Career plan";
+}
+
+<h1>Career plan</h1>
+<p>Set a direction, keep recommendations separate from evidence, and track practical next steps.</p>
+
+@if (Model.Plan is null)
+{
+    <p>No career plan has been saved yet.</p>
+    <a class="btn btn-primary" asp-action="Create">Create your plan</a>
+}
+else
+{
+    <section class="card">
+        <div class="card-body">
+            <div class="d-flex flex-wrap align-items-center gap-2">
+                <h2 class="h4 mb-0">Your current plan</h2>
+                @if (Model.IsApproved)
+                {
+                    <span class="badge text-bg-success">Approved current content</span>
+                }
+                else
+                {
+                    <span class="badge text-bg-secondary">Draft — not approved</span>
+                }
+            </div>
+            <h3 class="h6 mt-3">Target roles</h3>
+            <p class="text-break">@Model.Plan.TargetRoles</p>
+            <p class="small text-secondary">Updated @Model.Plan.UpdatedAtUtc.ToString("u")</p>
+            <a class="btn btn-primary" asp-action="Edit" asp-route-id="@Model.Plan.Id">Revisit plan</a>
+        </div>
+    </section>
+}
