@@ -21,6 +21,7 @@ using Microsoft.Extensions.Options;
 
 namespace CareerManager.Tests;
 
+[Collection("Connection string environment")]
 public sealed class OpportunityEndpointTests
 {
     [Fact]

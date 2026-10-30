@@ -24,12 +24,18 @@ using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 
 namespace CareerManager.Tests;
 
+[CollectionDefinition("Connection string environment", DisableParallelization = true)]
+public sealed class ConnectionStringEnvironmentCollection
+{
+}
+
+[Collection("Connection string environment")]
 public sealed class AuthenticationTests
 {
     [Fact]
     public async Task PrivateWorkspaceRequiresOwnerClaimButLandingAndPrivacyArePublic()
     {
-        await using var factory = new AuthenticationWebApplicationFactory();
+        using var factory = new AuthenticationWebApplicationFactory();
         using var client = CreateClient(factory);
 
         var workspace = await client.GetAsync("/Home/Workspace");
@@ -61,7 +67,7 @@ public sealed class AuthenticationTests
     [Fact]
     public async Task TokenValidationAddsOwnerClaimOnlyForConfiguredSubject()
     {
-        await using var factory = new AuthenticationWebApplicationFactory();
+        using var factory = new AuthenticationWebApplicationFactory();
         var services = factory.Services;
         var scheme = await services.GetRequiredService<IAuthenticationSchemeProvider>()
             .GetSchemeAsync(OpenIdConnectDefaults.AuthenticationScheme);
@@ -104,7 +110,7 @@ public sealed class AuthenticationTests
     [Fact]
     public async Task SignInChallengesMicrosoftAndMissingOwnerConfigurationFailsClosed()
     {
-        await using (var factory = new AuthenticationWebApplicationFactory())
+        using (var factory = new AuthenticationWebApplicationFactory())
         {
             using var client = CreateClient(factory);
             var response = await client.GetAsync("/Account/SignIn?returnUrl=%2FHome%2FWorkspace");
@@ -114,7 +120,7 @@ public sealed class AuthenticationTests
             Assert.Contains("client_id=test-client", response.Headers.Location.Query, StringComparison.Ordinal);
         }
 
-        await using (var factory = new AuthenticationWebApplicationFactory(configureOwner: false))
+        using (var factory = new AuthenticationWebApplicationFactory(configureOwner: false))
         {
             using var client = CreateClient(factory);
             var response = await client.GetAsync("/Account/SignIn");
@@ -126,7 +132,7 @@ public sealed class AuthenticationTests
     [Fact]
     public async Task StateChangingActionsRejectRequestsWithoutAntiforgeryToken()
     {
-        await using var factory = new AuthenticationWebApplicationFactory();
+        using var factory = new AuthenticationWebApplicationFactory();
         await SeedOwnerAsync(factory);
         using var client = CreateClient(factory);
         client.DefaultRequestHeaders.Add("X-Test-Owner", "owner-a");
@@ -145,7 +151,7 @@ public sealed class AuthenticationTests
     [Fact]
     public async Task SignOutRequiresCsrfAndExpiresTheSessionCookie()
     {
-        await using var factory = new AuthenticationWebApplicationFactory();
+        using var factory = new AuthenticationWebApplicationFactory();
         await SeedOwnerAsync(factory);
         using var client = CreateClient(factory);
         client.DefaultRequestHeaders.Add("X-Test-Owner", "owner-a");
@@ -209,14 +215,23 @@ public sealed class AuthenticationTests
 
     private sealed class AuthenticationWebApplicationFactory : WebApplicationFactory<Program>
     {
+        private const string ConnectionStringEnvironmentVariable = "ConnectionStrings__CareerManager";
+        private readonly string? previousConnectionString =
+            Environment.GetEnvironmentVariable(ConnectionStringEnvironmentVariable);
         private readonly bool configureOwner;
 
         public AuthenticationWebApplicationFactory(bool configureOwner = true)
         {
             this.configureOwner = configureOwner;
             Environment.SetEnvironmentVariable(
-                "ConnectionStrings__CareerManager",
+                ConnectionStringEnvironmentVariable,
                 "Server=tcp:testing.database.windows.net,1433;Initial Catalog=CareerManager-Test;Integrated Security=True;Encrypt=True;TrustServerCertificate=False");
+        }
+
+        public new void Dispose()
+        {
+            base.Dispose();
+            Environment.SetEnvironmentVariable(ConnectionStringEnvironmentVariable, previousConnectionString);
         }
 
         protected override void ConfigureWebHost(IWebHostBuilder builder)
