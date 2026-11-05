@@ -142,7 +142,7 @@ public sealed class OpportunityEndpointTests
                     Profile = profile,
                     Category = "Achievement",
                     Title = "Reporting dashboard",
-                    Description = "Built reporting dashboards using SQL for teams."
+                    Context = "Built reporting dashboards using SQL for teams."
                 };
                 var plan = new CareerPlan
                 {
@@ -155,14 +155,14 @@ public sealed class OpportunityEndpointTests
                     NextActions = "Existing action",
                     Progress = "Progress note"
                 };
+                context.AddRange(owner, profile, evidence, plan);
+                await context.SaveChangesAsync();
                 plan.EvidenceReferences.Add(new CareerPlanEvidence
                 {
                     OwnerId = owner.Id,
                     CareerEntryId = evidence.Id,
-                    Entry = evidence,
                     Plan = plan
                 });
-                context.AddRange(owner, profile, evidence, plan);
                 await context.SaveChangesAsync();
                 planId = plan.Id;
             }
@@ -299,7 +299,15 @@ public sealed class OpportunityEndpointTests
                     Profile = profile,
                     Category = "Skill",
                     Title = "Safe title",
-                    Description = "A synthetic owner-selected skill."
+                    Context = "A synthetic owner-selected skill.",
+                    StartDate = new DateOnly(2024, 1, 1),
+                    EndDate = new DateOnly(2024, 6, 1),
+                    Contribution = "<script>alert(2)</script>",
+                    Outcome = "Owner outcome.",
+                    Metric = "Seven reports.",
+                    Tags = "SQL, reporting",
+                    SourceNote = "Owner source note.",
+                    SourceUrl = "https://source.example/evidence"
                 };
                 var opportunity = new CareerOpportunity
                 {
@@ -329,6 +337,7 @@ public sealed class OpportunityEndpointTests
             Assert.Equal(System.Net.HttpStatusCode.OK, response.StatusCode);
             Assert.Contains("&lt;script&gt;", page, StringComparison.Ordinal);
             Assert.Contains("A synthetic owner-selected skill.", page, StringComparison.Ordinal);
+            Assert.Contains("&lt;script&gt;alert(2)&lt;/script&gt;", page, StringComparison.Ordinal);
             Assert.Contains($"value=\"{entryId}\"", page, StringComparison.Ordinal);
             Assert.Contains("nothing is sent to an external AI service", page, StringComparison.Ordinal);
 
@@ -348,6 +357,12 @@ public sealed class OpportunityEndpointTests
             Assert.Equal(System.Net.HttpStatusCode.OK, previewResponse.StatusCode);
             Assert.Contains("Confirm generation", previewPage, StringComparison.Ordinal);
             Assert.Contains("A synthetic owner-selected skill.", previewPage, StringComparison.Ordinal);
+            Assert.Contains("&lt;script&gt;alert(2)&lt;/script&gt;", previewPage, StringComparison.Ordinal);
+            Assert.Contains("Owner outcome.", previewPage, StringComparison.Ordinal);
+            Assert.Contains("Seven reports.", previewPage, StringComparison.Ordinal);
+            Assert.Contains("SQL, reporting", previewPage, StringComparison.Ordinal);
+            Assert.Contains("Owner source note.", previewPage, StringComparison.Ordinal);
+            Assert.Contains("https://source.example/evidence", previewPage, StringComparison.Ordinal);
             Assert.Contains("&lt;script&gt;", previewPage, StringComparison.Ordinal);
             Assert.Contains("No generation request is sent until you confirm below.", previewPage, StringComparison.Ordinal);
         }
@@ -448,7 +463,7 @@ public sealed class OpportunityEndpointTests
                     ProfileId = profileA.Id,
                     Category = "Achievement",
                     Title = "Private achievement A",
-                    Description = "A detailed career achievement."
+                    Context = "A detailed career achievement."
                 };
                 var entryB = new CareerEntry
                 {
@@ -456,7 +471,7 @@ public sealed class OpportunityEndpointTests
                     ProfileId = profileB.Id,
                     Category = "Achievement",
                     Title = "Private achievement B",
-                    Description = "Other owner's private data."
+                    Context = "Other owner's private data."
                 };
                 var opportunity = new CareerOpportunity
                 {
@@ -539,7 +554,7 @@ public sealed class OpportunityEndpointTests
             using (var export = JsonDocument.Parse(exportJson))
             {
                 var root = export.RootElement;
-                Assert.Equal(1, root.GetProperty("schemaVersion").GetInt32());
+                Assert.Equal(2, root.GetProperty("schemaVersion").GetInt32());
                 Assert.Equal("owner-a", root.GetProperty("ownerId").GetString());
                 Assert.Equal("Private profile A", root.GetProperty("profiles")[0].GetProperty("name").GetString());
                 Assert.Equal("Private achievement A", root.GetProperty("entries")[0].GetProperty("title").GetString());
@@ -677,7 +692,7 @@ public sealed class OpportunityEndpointTests
                     Profile = profile,
                     Category = "Achievement",
                     Title = "Verified dashboard",
-                    Description = "Built reporting dashboards for the analytics team."
+                    Context = "Built reporting dashboards for the analytics team."
                 };
                 var opportunity = new CareerOpportunity
                 {
@@ -749,6 +764,364 @@ public sealed class OpportunityEndpointTests
             Environment.SetEnvironmentVariable(connectionStringEnvironmentVariable, previousConnectionString);
         }
     }
+
+    [Fact]
+    public async Task CareerEvidenceCreateEditSearchAndDeleteAreOwnerScopedAndPreserveInvalidInput()
+    {
+        const string connectionString =
+            "Server=tcp:testing.database.windows.net,1433;Initial Catalog=CareerManager-Test;Integrated Security=True;Encrypt=True;TrustServerCertificate=False";
+        const string connectionStringEnvironmentVariable = "ConnectionStrings__CareerManager";
+        var previousConnectionString = Environment.GetEnvironmentVariable(connectionStringEnvironmentVariable);
+        Environment.SetEnvironmentVariable(connectionStringEnvironmentVariable, connectionString);
+
+        try
+        {
+            await using var factory = new OpportunityWebApplicationFactory();
+            using var client = factory.CreateClient(new WebApplicationFactoryClientOptions
+            {
+                AllowAutoRedirect = false,
+                HandleCookies = true,
+                BaseAddress = new Uri("https://localhost")
+            });
+            using var anonymousClient = factory.CreateClient(new WebApplicationFactoryClientOptions
+            {
+                AllowAutoRedirect = false,
+                BaseAddress = new Uri("https://localhost")
+            });
+            var anonymousCreate = await anonymousClient.GetAsync("/CareerEvidence/Create");
+            Assert.Equal(System.Net.HttpStatusCode.Unauthorized, anonymousCreate.StatusCode);
+
+            using (var scope = factory.Services.CreateScope())
+            {
+                scope.ServiceProvider.GetRequiredService<CareerManagerContext>().CareerOwners.Add(
+                    new CareerOwner { Id = "owner-a" });
+                scope.ServiceProvider.GetRequiredService<CareerManagerContext>().CareerOwners.Add(
+                    new CareerOwner { Id = "owner-b" });
+                await scope.ServiceProvider.GetRequiredService<CareerManagerContext>().SaveChangesAsync();
+            }
+
+            client.DefaultRequestHeaders.Add("X-Test-Owner", "owner-a");
+            var createPage = await client.GetAsync("/CareerEvidence/Create");
+            var createHtml = await createPage.Content.ReadAsStringAsync();
+            Assert.Equal(System.Net.HttpStatusCode.OK, createPage.StatusCode);
+            Assert.Contains("Side project", createHtml, StringComparison.Ordinal);
+            var createToken = GetAntiforgeryToken(createHtml);
+            var createResponse = await client.PostAsync("/CareerEvidence/Create", new FormUrlEncodedContent(
+            [
+                new("Input.Category", "Achievement"),
+                new("Input.Title", "Saved dashboard result"),
+                new("Input.Context", "Owner-authored context."),
+                new("Input.StartDate", "2024-01-01"),
+                new("Input.EndDate", "2024-02-01"),
+                new("Input.Contribution", "Owner-authored contribution."),
+                new("Input.Outcome", "Owner-authored outcome."),
+                new("Input.Metric", "42 reports"),
+                new("Input.Tags", "reporting, SQL"),
+                new("Input.SourceNote", "Project record"),
+                new("Input.SourceUrl", "https://source.example/report"),
+                new("ProfileId", "999"),
+                new("__RequestVerificationToken", createToken)
+            ]));
+
+            Assert.Equal(System.Net.HttpStatusCode.Redirect, createResponse.StatusCode);
+            int entryId;
+            using (var scope = factory.Services.CreateScope())
+            {
+                var context = scope.ServiceProvider.GetRequiredService<CareerManagerContext>();
+                var entry = await context.CareerEntries.SingleAsync();
+                entryId = entry.Id;
+                Assert.Equal("owner-a", entry.OwnerId);
+                Assert.Equal("Owner-authored context.", entry.Context);
+                Assert.Equal(new DateOnly(2024, 1, 1), entry.StartDate);
+                Assert.Equal("42 reports", entry.Metric);
+                Assert.Equal("reporting, SQL", entry.Tags);
+                Assert.Equal(1, await context.CareerProfiles.CountAsync(profile => profile.OwnerId == "owner-a"));
+            }
+
+            var workspaceResponse = await client.GetAsync(
+                $"/Home/Workspace?search=source.example&category=Achievement&selectedIds={entryId}");
+            var workspace = await workspaceResponse.Content.ReadAsStringAsync();
+            Assert.Equal(System.Net.HttpStatusCode.OK, workspaceResponse.StatusCode);
+            Assert.Contains("Owner-authored context.", workspace, StringComparison.Ordinal);
+            Assert.Contains($"value=\"{entryId}\" checked", workspace, StringComparison.Ordinal);
+            Assert.DoesNotContain("Fictional delivery coordinator", workspace, StringComparison.Ordinal);
+
+            var editPage = await client.GetAsync($"/CareerEvidence/Edit/{entryId}");
+            var editHtml = await editPage.Content.ReadAsStringAsync();
+            var editConcurrencyToken = GetHiddenValue(editHtml, "Input.ConcurrencyToken");
+            var invalidEdit = await client.PostAsync($"/CareerEvidence/Edit/{entryId}", new FormUrlEncodedContent(
+            [
+                new("Input.Category", "Achievement"),
+                new("Input.Title", "Value survives validation"),
+                new("Input.Context", "This form input must remain visible."),
+                new("Input.StartDate", "2025-01-01"),
+                new("Input.EndDate", "2024-01-01"),
+                new("Input.SourceUrl", "javascript:alert(1)"),
+                new("Input.ConcurrencyToken", editConcurrencyToken),
+                new("__RequestVerificationToken", GetAntiforgeryToken(editHtml))
+            ]));
+            var invalidHtml = await invalidEdit.Content.ReadAsStringAsync();
+            Assert.Equal(System.Net.HttpStatusCode.OK, invalidEdit.StatusCode);
+            Assert.Contains("Value survives validation", invalidHtml, StringComparison.Ordinal);
+            Assert.Contains("This form input must remain visible.", invalidHtml, StringComparison.Ordinal);
+            var editResponse = await client.PostAsync($"/CareerEvidence/Edit/{entryId}", new FormUrlEncodedContent(
+            [
+                new("Input.Category", "Achievement"),
+                new("Input.Title", "Edited dashboard result"),
+                new("Input.Context", "Edited owner-authored context."),
+                new("Input.StartDate", "2025-01-01"),
+                new("Input.EndDate", "2025-02-01"),
+                new("Input.Contribution", "Edited contribution."),
+                new("Input.Outcome", "Edited outcome."),
+                new("Input.Metric", ""),
+                new("Input.Tags", "edited, tags"),
+                new("Input.SourceNote", "Edited source"),
+                new("Input.SourceUrl", "https://source.example/updated"),
+                new("Input.ConcurrencyToken", GetHiddenValue(invalidHtml, "Input.ConcurrencyToken")),
+                new("__RequestVerificationToken", GetAntiforgeryToken(invalidHtml))
+            ]));
+            Assert.Equal(System.Net.HttpStatusCode.Redirect, editResponse.StatusCode);
+
+            var staleEdit = await client.PostAsync($"/CareerEvidence/Edit/{entryId}", new FormUrlEncodedContent(
+            [
+                new("Input.Category", "Achievement"),
+                new("Input.Title", "Stale edit must not overwrite"),
+                new("Input.Context", "Stale context."),
+                new("Input.ConcurrencyToken", editConcurrencyToken),
+                new("__RequestVerificationToken", GetAntiforgeryToken(editHtml))
+            ]));
+            var staleEditHtml = await staleEdit.Content.ReadAsStringAsync();
+            Assert.Equal(System.Net.HttpStatusCode.Conflict, staleEdit.StatusCode);
+            Assert.Contains("This evidence changed after you opened it.", staleEditHtml, StringComparison.Ordinal);
+
+            using (var scope = factory.Services.CreateScope())
+            {
+                var editedEntry = await scope.ServiceProvider.GetRequiredService<CareerManagerContext>()
+                    .CareerEntries.SingleAsync(entry => entry.Id == entryId);
+                Assert.Equal("Edited dashboard result", editedEntry.Title);
+                Assert.Equal("Edited owner-authored context.", editedEntry.Context);
+                Assert.Null(editedEntry.Metric);
+                Assert.Equal("edited, tags", editedEntry.Tags);
+                Assert.NotEqual(Guid.Parse(editConcurrencyToken), editedEntry.ConcurrencyToken);
+            }
+
+            client.DefaultRequestHeaders.Remove("X-Test-Owner");
+            client.DefaultRequestHeaders.Add("X-Test-Owner", "owner-b");
+            var forgedEdit = await client.GetAsync($"/CareerEvidence/Edit/{entryId}");
+            var otherOwnerPage = await client.GetAsync("/CareerEvidence/Create");
+            var otherOwnerToken = GetAntiforgeryToken(await otherOwnerPage.Content.ReadAsStringAsync());
+            var forgedDelete = await client.PostAsync(
+                $"/CareerEvidence/Delete/{entryId}",
+                new FormUrlEncodedContent(
+                [
+                    new("__RequestVerificationToken", otherOwnerToken)
+                ]));
+            Assert.Equal(System.Net.HttpStatusCode.NotFound, forgedEdit.StatusCode);
+            Assert.Equal(System.Net.HttpStatusCode.NotFound, forgedDelete.StatusCode);
+
+            client.DefaultRequestHeaders.Remove("X-Test-Owner");
+            client.DefaultRequestHeaders.Add("X-Test-Owner", "owner-a");
+            var deletePage = await client.GetAsync($"/CareerEvidence/Delete/{entryId}");
+            var deleteHtml = await deletePage.Content.ReadAsStringAsync();
+            var deleteResponse = await client.PostAsync(
+                $"/CareerEvidence/Delete/{entryId}",
+                new FormUrlEncodedContent(
+                [
+                    new("__RequestVerificationToken", GetAntiforgeryToken(deleteHtml))
+                ]));
+            Assert.Equal(System.Net.HttpStatusCode.Redirect, deleteResponse.StatusCode);
+            using var verificationScope = factory.Services.CreateScope();
+            Assert.False(await verificationScope.ServiceProvider.GetRequiredService<CareerManagerContext>()
+                .CareerEntries.AnyAsync(entry => entry.Id == entryId));
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable(connectionStringEnvironmentVariable, previousConnectionString);
+        }
+    }
+
+    [Fact]
+    public async Task DeletingReferencedEvidencePreservesTextAndSurfacesMissingReferences()
+    {
+        const string connectionString =
+            "Server=tcp:testing.database.windows.net,1433;Initial Catalog=CareerManager-Test;Integrated Security=True;Encrypt=True;TrustServerCertificate=False";
+        const string connectionStringEnvironmentVariable = "ConnectionStrings__CareerManager";
+        var previousConnectionString = Environment.GetEnvironmentVariable(connectionStringEnvironmentVariable);
+        Environment.SetEnvironmentVariable(connectionStringEnvironmentVariable, connectionString);
+
+        try
+        {
+            await using var factory = new OpportunityWebApplicationFactory();
+            int entryId;
+            int documentId;
+            int planId;
+            using (var scope = factory.Services.CreateScope())
+            {
+                var context = scope.ServiceProvider.GetRequiredService<CareerManagerContext>();
+                var owner = new CareerOwner { Id = "owner-a" };
+                var profile = new CareerProfile { OwnerId = owner.Id, Name = "Private profile" };
+                var entry = new CareerEntry
+                {
+                    OwnerId = owner.Id,
+                    Profile = profile,
+                    Category = "Achievement",
+                    Title = "Referenced result",
+                    Context = "The original saved evidence."
+                };
+                var document = new CareerDocument
+                {
+                    OwnerId = owner.Id,
+                    Title = "Saved resume",
+                    Text = "Saved document text remains exactly as written.",
+                    Type = CareerDocumentType.Resume,
+                    ApprovedAtUtc = DateTime.UtcNow,
+                    ApprovedContentHash = "saved-hash"
+                };
+                var plan = new CareerPlan
+                {
+                    OwnerId = owner.Id,
+                    TargetRoles = "Saved plan text remains exactly as written.",
+                    ApprovedAtUtc = DateTime.UtcNow,
+                    ApprovedContentHash = "saved-plan-hash"
+                };
+                context.AddRange(owner, profile, entry, document, plan);
+                await context.SaveChangesAsync();
+                context.AddRange(
+                    new CareerDocumentEvidence
+                    {
+                        OwnerId = owner.Id,
+                        CareerDocumentId = document.Id,
+                        CareerEntryId = entry.Id,
+                        Document = document
+                    },
+                    new CareerPlanEvidence
+                    {
+                        OwnerId = owner.Id,
+                        CareerPlanId = plan.Id,
+                        CareerEntryId = entry.Id,
+                        Plan = plan
+                    });
+                await context.SaveChangesAsync();
+                entryId = entry.Id;
+                documentId = document.Id;
+                planId = plan.Id;
+            }
+
+            using var client = factory.CreateClient(new WebApplicationFactoryClientOptions
+            {
+                AllowAutoRedirect = false,
+                HandleCookies = true,
+                BaseAddress = new Uri("https://localhost")
+            });
+            client.DefaultRequestHeaders.Add("X-Test-Owner", "owner-a");
+            var evidenceEditPage = await client.GetAsync($"/CareerEvidence/Edit/{entryId}");
+            var evidenceEditHtml = await evidenceEditPage.Content.ReadAsStringAsync();
+            var evidenceEdit = await client.PostAsync(
+                $"/CareerEvidence/Edit/{entryId}",
+                new FormUrlEncodedContent(
+                [
+                    new("Input.Category", "Achievement"),
+                    new("Input.Title", "Edited referenced result"),
+                    new("Input.Context", "Updated evidence requires review."),
+                    new("Input.ConcurrencyToken", GetHiddenValue(evidenceEditHtml, "Input.ConcurrencyToken")),
+                    new("__RequestVerificationToken", GetAntiforgeryToken(evidenceEditHtml))
+                ]));
+            Assert.Equal(System.Net.HttpStatusCode.Redirect, evidenceEdit.StatusCode);
+
+            using (var scope = factory.Services.CreateScope())
+            {
+                var context = scope.ServiceProvider.GetRequiredService<CareerManagerContext>();
+                var savedDocument = await context.CareerDocuments.SingleAsync(item => item.Id == documentId);
+                var savedPlan = await context.CareerPlans.SingleAsync(item => item.Id == planId);
+                Assert.Equal("Saved document text remains exactly as written.", savedDocument.Text);
+                Assert.Equal("Saved plan text remains exactly as written.", savedPlan.TargetRoles);
+                Assert.Null(savedDocument.ApprovedAtUtc);
+                Assert.Null(savedPlan.ApprovedAtUtc);
+                Assert.True(savedDocument.RequiresFactualReview);
+                Assert.True(savedPlan.RequiresFactualReview);
+                Assert.True(await context.CareerDocumentEvidence.AnyAsync(reference => reference.CareerEntryId == entryId));
+                Assert.True(await context.CareerPlanEvidence.AnyAsync(reference => reference.CareerEntryId == entryId));
+            }
+
+            var deletePage = await client.GetAsync($"/CareerEvidence/Delete/{entryId}");
+            var deleteHtml = await deletePage.Content.ReadAsStringAsync();
+            var delete = await client.PostAsync(
+                $"/CareerEvidence/Delete/{entryId}",
+                new FormUrlEncodedContent(
+                [
+                    new("__RequestVerificationToken", GetAntiforgeryToken(deleteHtml))
+                ]));
+            Assert.Equal(System.Net.HttpStatusCode.Redirect, delete.StatusCode);
+
+            using (var scope = factory.Services.CreateScope())
+            {
+                var context = scope.ServiceProvider.GetRequiredService<CareerManagerContext>();
+                var savedDocument = await context.CareerDocuments.SingleAsync(item => item.Id == documentId);
+                var savedPlan = await context.CareerPlans.SingleAsync(item => item.Id == planId);
+                Assert.Equal("Saved document text remains exactly as written.", savedDocument.Text);
+                Assert.Equal("Saved plan text remains exactly as written.", savedPlan.TargetRoles);
+                Assert.Null(savedDocument.ApprovedAtUtc);
+                Assert.Null(savedPlan.ApprovedAtUtc);
+                Assert.True(savedDocument.RequiresFactualReview);
+                Assert.True(savedPlan.RequiresFactualReview);
+                Assert.True(await context.CareerDocumentEvidence.AnyAsync(reference => reference.CareerEntryId == entryId));
+                Assert.True(await context.CareerPlanEvidence.AnyAsync(reference => reference.CareerEntryId == entryId));
+            }
+
+            var documentReview = await client.GetAsync($"/Documents/Review/{documentId}");
+            var documentReviewHtml = await documentReview.Content.ReadAsStringAsync();
+            var planEdit = await client.GetAsync($"/CareerPlans/Edit/{planId}");
+            var planEditHtml = await planEdit.Content.ReadAsStringAsync();
+            var planReview = await client.GetAsync($"/CareerPlans/ReviewApproval/{planId}");
+            var planReviewHtml = await planReview.Content.ReadAsStringAsync();
+            Assert.Contains("Evidence #" + entryId + " was removed", documentReviewHtml, StringComparison.Ordinal);
+            Assert.Contains("Keep this missing reference", planEditHtml, StringComparison.Ordinal);
+            Assert.Contains("Evidence #" + entryId + " was removed", planReviewHtml, StringComparison.Ordinal);
+
+            var keepMissingReference = await client.PostAsync(
+                $"/CareerPlans/Edit/{planId}",
+                new FormUrlEncodedContent(
+                [
+                    new("Input.TargetRoles", "Saved plan text remains exactly as written."),
+                    new("Input.ConcurrencyToken", GetHiddenValue(planEditHtml, "Input.ConcurrencyToken")),
+                    new("Input.MissingEvidenceIds", entryId.ToString()),
+                    new("__RequestVerificationToken", GetAntiforgeryToken(planEditHtml))
+                ]));
+            Assert.Equal(System.Net.HttpStatusCode.Redirect, keepMissingReference.StatusCode);
+            using (var scope = factory.Services.CreateScope())
+            {
+                Assert.True(await scope.ServiceProvider.GetRequiredService<CareerManagerContext>()
+                    .CareerPlanEvidence.AnyAsync(reference => reference.CareerEntryId == entryId));
+            }
+
+            var updatedPlanEdit = await client.GetAsync($"/CareerPlans/Edit/{planId}");
+            var updatedPlanEditHtml = await updatedPlanEdit.Content.ReadAsStringAsync();
+            var removeMissingReference = await client.PostAsync(
+                $"/CareerPlans/Edit/{planId}",
+                new FormUrlEncodedContent(
+                [
+                    new("Input.TargetRoles", "Saved plan text remains exactly as written."),
+                    new("Input.ConcurrencyToken", GetHiddenValue(updatedPlanEditHtml, "Input.ConcurrencyToken")),
+                    new("__RequestVerificationToken", GetAntiforgeryToken(updatedPlanEditHtml))
+                ]));
+            Assert.Equal(System.Net.HttpStatusCode.Redirect, removeMissingReference.StatusCode);
+            using (var scope = factory.Services.CreateScope())
+            {
+                Assert.False(await scope.ServiceProvider.GetRequiredService<CareerManagerContext>()
+                    .CareerPlanEvidence.AnyAsync(reference => reference.CareerEntryId == entryId));
+            }
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable(connectionStringEnvironmentVariable, previousConnectionString);
+        }
+    }
+
+    private static string GetAntiforgeryToken(string html) =>
+        Regex.Match(html, "name=\"__RequestVerificationToken\"[^>]*value=\"([^\"]+)\"").Groups[1].Value;
+
+    private static string GetHiddenValue(string html, string fieldName) =>
+        Regex.Match(html, $"name=\"{Regex.Escape(fieldName)}\" value=\"([^\"]+)\"").Groups[1].Value;
 
     private static Task<HttpResponseMessage> PostDeleteConfirmationAsync(
         HttpClient client,

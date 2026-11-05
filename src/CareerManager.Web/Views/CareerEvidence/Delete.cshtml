@@ -1,0 +1,13 @@
+@model CareerManager.ViewModels.CareerEvidenceDeleteViewModel
+
+@{
+    ViewData["Title"] = "Delete career evidence";
+}
+
+<h1>Delete career evidence</h1>
+<p>Delete <strong>@Model.Title</strong> (@Model.Category)? Saved document and plan text will stay unchanged. Their evidence references will be marked missing and require factual review.</p>
+
+<form asp-action="Delete" asp-route-id="@Model.Id" method="post">
+    <button class="btn btn-danger" type="submit">Delete evidence</button>
+    <a class="btn btn-outline-secondary" asp-controller="Home" asp-action="Workspace">Cancel</a>
+</form>

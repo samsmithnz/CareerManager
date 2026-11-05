@@ -13,6 +13,10 @@ else
 {
     <p class="text-muted">Draft — saving or exporting does not approve this document.</p>
 }
+@if (Model.RequiresFactualReview)
+{
+    <p class="alert alert-warning" role="alert">Referenced evidence changed or was removed. Saved text is unchanged; review factual claims again before approval.</p>
+}
 @if (Model.EvidenceReferences.Any(reference => reference.Missing))
 {
     <div class="alert alert-warning" role="alert">
@@ -37,7 +41,7 @@ else
                     }
                     else
                     {
-                        <span>@reference.Title (evidence #@reference.Id)</span>
+                        <span>@reference.Title (evidence #@reference.Id): @reference.Context</span>
                     }
                 </li>
             }

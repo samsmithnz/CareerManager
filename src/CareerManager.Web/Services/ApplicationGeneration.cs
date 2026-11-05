@@ -4,7 +4,46 @@ using System.Collections.Concurrent;
 
 namespace CareerManager.Services;
 
-public sealed record GenerationEvidence(int Id, string Category, string Title, string Description);
+public sealed record GenerationEvidence(
+    int Id,
+    string Category,
+    string Title,
+    string Context,
+    DateOnly? StartDate = null,
+    DateOnly? EndDate = null,
+    string? Contribution = null,
+    string? Outcome = null,
+    string? Metric = null,
+    string? Tags = null,
+    string? SourceNote = null,
+    string? SourceUrl = null)
+{
+    public string MatchingText => string.Join(' ', new[]
+    {
+        Category, Title, Context, Contribution, Outcome, Metric, Tags
+    }.Where(value => !string.IsNullOrWhiteSpace(value)));
+
+    public string FactualText => string.Join(' ', new[]
+    {
+        Context,
+        StartDate?.ToString("yyyy-MM-dd"),
+        EndDate?.ToString("yyyy-MM-dd"),
+        Contribution,
+        Outcome,
+        Metric
+    }.Where(value => !string.IsNullOrWhiteSpace(value)));
+
+    public int CharacterLength =>
+        Category.Length + Title.Length + Context.Length
+        + (StartDate?.ToString("yyyy-MM-dd").Length ?? 0)
+        + (EndDate?.ToString("yyyy-MM-dd").Length ?? 0)
+        + (Contribution?.Length ?? 0)
+        + (Outcome?.Length ?? 0)
+        + (Metric?.Length ?? 0)
+        + (Tags?.Length ?? 0)
+        + (SourceNote?.Length ?? 0)
+        + (SourceUrl?.Length ?? 0);
+}
 
 public sealed record ApplicationGenerationRequest(
     string Company,
@@ -62,7 +101,7 @@ public sealed class DeterministicApplicationGenerationProvider : IApplicationGen
         var gaps = new List<EvidenceGap>();
         var evidenceWords = request.Evidence.ToDictionary(
             evidence => evidence.Id,
-            evidence => Tokenize($"{evidence.Title} {evidence.Description}"));
+            evidence => Tokenize(evidence.MatchingText));
 
         foreach (var requirement in RequirementSeparator.Split(request.JobDescription)
                      .Select(value => value.Trim())
@@ -91,12 +130,12 @@ public sealed class DeterministicApplicationGenerationProvider : IApplicationGen
 
         var claims = request.Evidence
             .Select(evidence => new SupportedClaim(
-                $"{evidence.Title}: {evidence.Description}",
+                $"{evidence.Title}: {evidence.Context}",
                 [evidence.Id]))
             .ToArray();
 
         var questions = request.Evidence
-            .Where(evidence => !Regex.IsMatch(evidence.Description, @"\d"))
+            .Where(evidence => !Regex.IsMatch(evidence.FactualText, @"\d"))
             .Select(evidence => $"Can you add a verified date, number, or result for “{evidence.Title}”?")
             .ToList();
         cancellationToken.ThrowIfCancellationRequested();
@@ -139,7 +178,7 @@ public sealed class ApplicationGenerationService(IApplicationGenerationProvider 
             + request.RoleTitle.Length
             + request.JobDescription.Length
             + request.CompanyContext.Length
-            + request.Evidence.Sum(evidence => evidence.Category.Length + evidence.Title.Length + evidence.Description.Length);
+            + request.Evidence.Sum(evidence => evidence.CharacterLength);
         if (request.Evidence.Count > MaximumEvidenceCount || inputLength > MaximumInputCharacters)
         {
             throw new ApplicationGenerationException(
@@ -270,7 +309,7 @@ public sealed class ApplicationGenerationService(IApplicationGenerationProvider 
             && !string.IsNullOrWhiteSpace(claim.Text)
             && claim.EvidenceIds is { Count: 1 }
             && selectedEvidence.TryGetValue(claim.EvidenceIds[0], out var evidence)
-            && string.Equals(claim.Text, $"{evidence.Title}: {evidence.Description}", StringComparison.Ordinal));
+            && string.Equals(claim.Text, $"{evidence.Title}: {evidence.Context}", StringComparison.Ordinal));
 
     private static bool HasSupportedMatch(
         SupportedRoleMatch match,
@@ -284,7 +323,7 @@ public sealed class ApplicationGenerationService(IApplicationGenerationProvider 
 
         var requirementWords = Tokenize(match.Requirement);
         return match.EvidenceIds.All(id => requirementWords
-            .Intersect(Tokenize($"{selectedEvidence[id].Title} {selectedEvidence[id].Description}"),
+            .Intersect(Tokenize(selectedEvidence[id].MatchingText),
                 StringComparer.OrdinalIgnoreCase)
             .Count() >= 2);
     }

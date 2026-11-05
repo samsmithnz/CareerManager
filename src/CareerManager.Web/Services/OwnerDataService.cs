@@ -27,7 +27,8 @@ public sealed class OwnerDataService(CareerManagerContext context)
                 .ToListAsync(cancellationToken))
                 .Select(entry => new CareerEntryExport(
                     entry.Id, entry.OwnerId, entry.ProfileId, entry.SyntheticKey,
-                    entry.Category, entry.Title, entry.Description)).ToArray(),
+                    entry.Category, entry.Title, entry.Context, entry.StartDate, entry.EndDate,
+                    entry.Contribution, entry.Outcome, entry.Metric, entry.Tags, entry.SourceNote, entry.SourceUrl)).ToArray(),
             Opportunities = (await context.CareerOpportunities.AsNoTracking()
                 .Where(opportunity => opportunity.OwnerId == ownerId).OrderBy(opportunity => opportunity.Id)
                 .ToListAsync(cancellationToken))
@@ -43,7 +44,8 @@ public sealed class OwnerDataService(CareerManagerContext context)
                 .Select(document => new CareerDocumentExport(
                     document.Id, document.OwnerId, document.OpportunityId, document.Title, document.Text,
                     document.Type.ToString(), document.ConcurrencyToken, document.ApprovedAtUtc,
-                    document.ApprovedContentHash, document.CreatedAtUtc, document.UpdatedAtUtc)).ToArray(),
+                    document.ApprovedContentHash, document.RequiresFactualReview,
+                    document.CreatedAtUtc, document.UpdatedAtUtc)).ToArray(),
             DocumentEvidence = (await context.CareerDocumentEvidence.AsNoTracking()
                 .Where(reference => reference.OwnerId == ownerId)
                 .OrderBy(reference => reference.CareerDocumentId).ThenBy(reference => reference.CareerEntryId)
@@ -57,7 +59,7 @@ public sealed class OwnerDataService(CareerManagerContext context)
                     plan.Id, plan.OwnerId, plan.TargetRoles, plan.Strengths, plan.Interests,
                     plan.EvidenceGaps, plan.Recommendations, plan.NextActions, plan.Progress,
                     plan.ConcurrencyToken, plan.ApprovedAtUtc, plan.ApprovedContentHash,
-                    plan.CreatedAtUtc, plan.UpdatedAtUtc)).ToArray(),
+                    plan.RequiresFactualReview, plan.CreatedAtUtc, plan.UpdatedAtUtc)).ToArray(),
             PlanEvidence = (await context.CareerPlanEvidence.AsNoTracking()
                 .Where(reference => reference.OwnerId == ownerId)
                 .OrderBy(reference => reference.CareerPlanId).ThenBy(reference => reference.CareerEntryId)

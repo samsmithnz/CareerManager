@@ -29,6 +29,12 @@ else
             </div>
             <h3 class="h6 mt-3">Target roles</h3>
             <p class="text-break">@Model.Plan.TargetRoles</p>
+            @if (Model.MissingEvidenceCount > 0 || Model.Plan.RequiresFactualReview)
+            {
+                <p class="alert alert-warning" role="alert">
+                    Evidence changed or was removed. @Model.MissingEvidenceCount reference(s) are missing; review factual support before approval.
+                </p>
+            }
             <p class="small text-secondary">Updated @Model.Plan.UpdatedAtUtc.ToString("u")</p>
             <a class="btn btn-primary" asp-action="Edit" asp-route-id="@Model.Plan.Id">Revisit plan</a>
         </div>

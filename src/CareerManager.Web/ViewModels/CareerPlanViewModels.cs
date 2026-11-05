@@ -29,12 +29,14 @@ public sealed class CareerPlanInputModel
     public string? Progress { get; set; } = string.Empty;
 
     public int[] SelectedEvidenceIds { get; set; } = [];
+    public int[] MissingEvidenceIds { get; set; } = [];
 }
 
 public sealed class CareerPlanIndexViewModel
 {
     public CareerPlan? Plan { get; init; }
     public bool IsApproved { get; init; }
+    public int MissingEvidenceCount { get; init; }
 }
 
 public sealed class CareerPlanEditViewModel
@@ -43,13 +45,16 @@ public sealed class CareerPlanEditViewModel
     public required CareerPlanInputModel Input { get; init; }
     public required IReadOnlyList<CareerEntry> AvailableEvidence { get; init; }
     public required IReadOnlySet<int> SelectedEvidenceIds { get; init; }
+    public required IReadOnlyList<int> MissingEvidenceIds { get; init; }
     public bool IsApproved { get; init; }
+    public bool RequiresFactualReview { get; init; }
 }
 
 public sealed class CareerPlanGenerationReviewViewModel
 {
     public required CareerPlan Plan { get; init; }
     public required IReadOnlyList<CareerEntry> SelectedEvidence { get; init; }
+    public required IReadOnlyList<int> MissingEvidenceIds { get; init; }
     public required string PreviewToken { get; init; }
     public required string ProviderName { get; init; }
     public required string ModelName { get; init; }
@@ -62,6 +67,7 @@ public sealed class CareerPlanGeneratedReviewViewModel
 {
     public required CareerPlan Plan { get; init; }
     public required IReadOnlyList<CareerEntry> SelectedEvidence { get; init; }
+    public required IReadOnlyList<int> MissingEvidenceIds { get; init; }
     public required string EvidenceGaps { get; init; }
     public required string Recommendations { get; init; }
     public required string NextActions { get; init; }
@@ -89,6 +95,7 @@ public sealed class CareerPlanApprovalViewModel
 {
     public required CareerPlan Plan { get; init; }
     public required IReadOnlyList<CareerEntry> SelectedEvidence { get; init; }
+    public required IReadOnlyList<int> MissingEvidenceIds { get; init; }
     public required CareerPlanApprovalInputModel Input { get; init; }
     public bool IsApproved { get; init; }
 }

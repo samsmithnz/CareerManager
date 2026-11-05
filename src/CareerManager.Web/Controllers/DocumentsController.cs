@@ -62,7 +62,8 @@ public sealed class DocumentsController(
                     document,
                     ids.Where(existingEvidence.ContainsKey).Select(id => existingEvidence[id].Title).ToArray(),
                     ids.Count(id => !existingEvidence.ContainsKey(id)),
-                    IsApproved(document));
+                    IsApproved(document),
+                    document.RequiresFactualReview);
             }).ToArray()
         });
     }
@@ -196,6 +197,7 @@ public sealed class DocumentsController(
 
         document.ApprovedAtUtc = DateTime.UtcNow;
         document.ApprovedContentHash = GetContentHash(document.Title, document.Text);
+        document.RequiresFactualReview = false;
         document.UpdatedAtUtc = DateTime.UtcNow;
         document.ConcurrencyToken = Guid.NewGuid();
         try
@@ -318,10 +320,13 @@ public sealed class DocumentsController(
             },
             ApprovedAtUtc = document.ApprovedAtUtc,
             IsApproved = IsApproved(document),
+            RequiresFactualReview = document.RequiresFactualReview,
             CanExport = IsExportable(document.Type),
             EvidenceReferences = ids
                 .Select(id => existingEvidence.TryGetValue(id, out var entry)
-                    ? new EvidenceReferenceViewModel(id, entry.Title, false)
+                    ? new EvidenceReferenceViewModel(
+                        id, entry.Title, false, entry.Context, entry.StartDate, entry.EndDate,
+                        entry.Contribution, entry.Outcome, entry.Metric, entry.Tags, entry.SourceNote, entry.SourceUrl)
                     : new EvidenceReferenceViewModel(id, null, true))
                 .ToArray()
         };
@@ -336,6 +341,8 @@ public sealed class DocumentsController(
         type is CareerDocumentType.Resume or CareerDocumentType.CoverLetter;
 
     private static bool IsApproved(CareerDocument document) =>
+        !document.RequiresFactualReview
+        &&
         document.ApprovedAtUtc.HasValue
         && string.Equals(document.ApprovedContentHash, GetContentHash(document.Title, document.Text), StringComparison.Ordinal);
 

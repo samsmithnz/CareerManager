@@ -24,7 +24,7 @@ public sealed class CareerPlanTests
 
         var controller = CreateController(context, "owner-a");
         var otherOwnersPlan = await context.CareerPlans.SingleAsync();
-        var directRequest = await controller.Edit(otherOwnersPlan.Id, default);
+        var directRequest = await controller.Edit(otherOwnersPlan.Id, (int[]?)null, default);
         var forgedReference = await controller.Create(new CareerPlanInputModel
         {
             TargetRoles = "Reporting dashboards",
@@ -140,7 +140,7 @@ public sealed class CareerPlanTests
         Assert.Equal(beforeRecommendations, plan.Recommendations);
         Assert.Equal(beforeActions, plan.NextActions);
         Assert.NotNull(plan.ApprovedAtUtc);
-        Assert.Equal("Built reporting dashboards using SQL for teams.", evidence.Description);
+        Assert.Equal("Built reporting dashboards using SQL for teams.", evidence.Context);
 
         var replaced = await controller.ReplaceGenerated(plan.Id, new CareerPlanGeneratedProposalInputModel
         {
@@ -231,7 +231,7 @@ public sealed class CareerPlanTests
         var (_, plan, _) = await SeedPlan(context);
         var controller = CreateController(context, null);
 
-        Assert.IsType<ForbidResult>(await controller.Edit(plan.Id, default));
+        Assert.IsType<ForbidResult>(await controller.Edit(plan.Id, (int[]?)null, default));
         Assert.IsType<ForbidResult>(await controller.Index(default));
     }
 
@@ -247,7 +247,7 @@ public sealed class CareerPlanTests
             Profile = profile,
             Category = "Achievement",
             Title = "Reporting dashboard",
-            Description = "Built reporting dashboards using SQL for teams."
+            Context = "Built reporting dashboards using SQL for teams."
         };
         var plan = new CareerPlan
         {
@@ -260,14 +260,14 @@ public sealed class CareerPlanTests
             NextActions = "Existing action",
             Progress = "Progress note"
         };
+        context.AddRange(owner, profile, evidence, plan);
+        await context.SaveChangesAsync();
         plan.EvidenceReferences.Add(new CareerPlanEvidence
         {
             OwnerId = ownerId,
             CareerEntryId = evidence.Id,
-            Entry = evidence,
             Plan = plan
         });
-        context.AddRange(owner, profile, evidence, plan);
         await context.SaveChangesAsync();
         return (owner, plan, evidence);
     }

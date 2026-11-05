@@ -245,7 +245,9 @@ public sealed class ApplicationDraftsController(
             opportunity.Title,
             opportunity.JobDescription ?? string.Empty,
             opportunity.CompanyContext ?? string.Empty,
-            evidence.Select(entry => new GenerationEvidence(entry.Id, entry.Category, entry.Title, entry.Description)).ToArray());
+            evidence.Select(entry => new GenerationEvidence(
+                entry.Id, entry.Category, entry.Title, entry.Context, entry.StartDate, entry.EndDate,
+                entry.Contribution, entry.Outcome, entry.Metric, entry.Tags, entry.SourceNote, entry.SourceUrl)).ToArray());
 
     private string CreatePreviewToken(
         CareerOpportunity opportunity,
@@ -309,7 +311,7 @@ public sealed class ApplicationDraftsController(
         + request.RoleTitle.Length
         + request.JobDescription.Length
         + request.CompanyContext.Length
-        + request.Evidence.Sum(evidence => evidence.Category.Length + evidence.Title.Length + evidence.Description.Length);
+        + request.Evidence.Sum(evidence => evidence.CharacterLength);
 
     private Task<CareerOpportunity?> FindOwnedOpportunity(
         int id,

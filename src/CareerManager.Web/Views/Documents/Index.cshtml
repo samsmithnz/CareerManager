@@ -30,10 +30,10 @@ else
                     }
                     · Updated @row.Document.UpdatedAtUtc.ToString("u")
                 </p>
-                @if (row.MissingEvidenceCount > 0)
+                @if (row.RequiresFactualReview || row.MissingEvidenceCount > 0)
                 {
                     <p class="alert alert-warning" role="alert">
-                        @row.MissingEvidenceCount referenced evidence item(s) were removed. The saved text is unchanged; review its factual claims.
+                        Referenced evidence changed or was removed (@row.MissingEvidenceCount missing item(s)). The saved text is unchanged; review its factual claims.
                     </p>
                 }
                 @if (row.EvidenceTitles.Count > 0)

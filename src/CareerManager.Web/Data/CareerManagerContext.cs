@@ -39,9 +39,18 @@ public sealed class CareerManagerContext(DbContextOptions<CareerManagerContext> 
         {
             entity.HasKey(entry => entry.Id);
             entity.Property(entry => entry.OwnerId).HasMaxLength(256).IsRequired();
+            entity.Property(entry => entry.ConcurrencyToken)
+                .HasDefaultValueSql("NEWID()")
+                .IsConcurrencyToken();
             entity.Property(entry => entry.Category).HasMaxLength(80).IsRequired();
             entity.Property(entry => entry.Title).HasMaxLength(200).IsRequired();
-            entity.Property(entry => entry.Description).HasMaxLength(4000).IsRequired();
+            entity.Property(entry => entry.Context).HasMaxLength(4000).IsRequired();
+            entity.Property(entry => entry.Contribution).HasMaxLength(4000);
+            entity.Property(entry => entry.Outcome).HasMaxLength(4000);
+            entity.Property(entry => entry.Metric).HasMaxLength(1000);
+            entity.Property(entry => entry.Tags).HasMaxLength(2000);
+            entity.Property(entry => entry.SourceNote).HasMaxLength(2000);
+            entity.Property(entry => entry.SourceUrl).HasMaxLength(2048);
             entity.Property(entry => entry.SyntheticKey).HasMaxLength(80);
             entity.HasIndex(entry => new { entry.OwnerId, entry.ProfileId, entry.SyntheticKey })
                 .IsUnique()
@@ -148,11 +157,6 @@ public sealed class CareerManagerContext(DbContextOptions<CareerManagerContext> 
                 .HasForeignKey(reference => new { reference.OwnerId, reference.CareerPlanId })
                 .HasPrincipalKey(plan => new { plan.OwnerId, plan.Id })
                 .OnDelete(DeleteBehavior.Cascade);
-            entity.HasOne(reference => reference.Entry)
-                .WithMany()
-                .HasForeignKey(reference => new { reference.OwnerId, reference.CareerEntryId })
-                .HasPrincipalKey(entry => new { entry.OwnerId, entry.Id })
-                .OnDelete(DeleteBehavior.Restrict);
             entity.HasIndex(reference => new { reference.OwnerId, reference.CareerEntryId });
         });
 

@@ -1,3 +1,5 @@
+using CareerManager.Models;
+
 namespace CareerManager.ViewModels;
 
 public sealed record EvidencePrototypeEntry(
@@ -40,13 +42,16 @@ public sealed class EvidenceWorkspaceViewModel
     public required IReadOnlyList<string> Categories { get; init; }
     public required IReadOnlyList<EvidencePrototypeEntry> Entries { get; init; }
     public required IReadOnlyList<EvidencePrototypeEntry> SelectedEntries { get; init; }
+    public IReadOnlyList<CareerOpportunity> Opportunities { get; init; } = [];
+    public CareerPlan? Plan { get; init; }
+    public int MissingPlanEvidenceCount { get; init; }
     public string Search { get; init; } = string.Empty;
     public string Category { get; init; } = string.Empty;
 }
 
 public static class EvidenceWorkspacePrototype
 {
-    private static readonly string[] CategoryOptions =
+    public static readonly string[] CategoryOptions =
     [
         "Work experience",
         "Education",
@@ -242,6 +247,91 @@ public static class EvidenceWorkspacePrototype
         };
     }
 
+    public static EvidenceWorkspaceViewModel CreatePersisted(
+        IEnumerable<CareerEntry> persistedEntries,
+        CareerPlan? plan,
+        int missingPlanEvidenceCount,
+        IReadOnlyList<CareerOpportunity> opportunities,
+        string? search,
+        string? category,
+        IEnumerable<int>? selectedIds)
+    {
+        var normalizedSearch = search?.Trim() ?? string.Empty;
+        var requestedCategory = category?.Trim() ?? string.Empty;
+        var normalizedCategory = CategoryOptions.FirstOrDefault(
+            option => string.Equals(option, requestedCategory, StringComparison.OrdinalIgnoreCase)) ?? string.Empty;
+        var hasInvalidCategory = requestedCategory.Length > 0 && normalizedCategory.Length == 0;
+        var storedEntries = persistedEntries
+            .OrderBy(entry => entry.Category)
+            .ThenBy(entry => entry.Title)
+            .Select(entry => new EvidencePrototypeEntry(
+                entry.Id,
+                entry.Category,
+                entry.Title,
+                entry.StartDate,
+                entry.EndDate,
+                entry.Context,
+                entry.Contribution ?? string.Empty,
+                entry.Outcome ?? string.Empty,
+                entry.Metric,
+                (entry.Tags ?? string.Empty)
+                    .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries),
+                entry.SourceNote,
+                entry.SourceUrl,
+                null))
+            .ToArray();
+        var selected = selectedIds?.Distinct().ToHashSet() ?? [];
+        var filteredEntries = storedEntries
+            .Where(entry => !hasInvalidCategory && (normalizedCategory.Length == 0
+                || string.Equals(entry.Category, normalizedCategory, StringComparison.Ordinal)))
+            .Where(entry => MatchesSearch(entry, normalizedSearch))
+            .ToArray();
+        var savedPlanActions = (plan?.NextActions ?? string.Empty)
+            .Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        var strengths = storedEntries.Where(entry => entry.Category == "Strength").Select(entry => entry.Title).ToArray();
+        var interests = storedEntries
+            .Where(entry => entry.Category is "Interest" or "Deep interest")
+            .Select(entry => entry.Title)
+            .ToArray();
+
+        return new EvidenceWorkspaceViewModel
+        {
+            Resume = new ResumePrototype(
+                "Choose persisted evidence below when you compare an opportunity; no resume summary is saved here.",
+                storedEntries.Where(entry => entry.Category == "Work experience").ToArray(),
+                storedEntries.Where(entry => entry.Category == "Skill").Select(entry => entry.Title).ToArray()),
+            Accomplishments = storedEntries.Where(entry => entry.Category == "Achievement").ToArray(),
+            DevelopmentPlan = new DevelopmentPlanPrototype(
+                plan?.TargetRoles ?? "No saved career plan yet.",
+                savedPlanActions,
+                plan?.Progress ?? string.Empty,
+                plan is null ? string.Empty : "Review the saved plan and its selected evidence when your goals change."),
+            CareerFit =
+            [
+                new(
+                    "What you are good at",
+                    "Persisted strengths; use the prompts below to reflect on their context.",
+                    strengths),
+                new(
+                    "What you like doing",
+                    "Persisted interests and deep interests.",
+                    interests),
+                new(
+                    "What makes money",
+                    "Illustrative reflection only; these are not saved facts or verified market demand.",
+                    ["Explore an opportunity, then verify its actual requirements and values."])
+            ],
+            Categories = CategoryOptions,
+            Entries = filteredEntries,
+            SelectedEntries = storedEntries.Where(entry => selected.Contains(entry.Id)).ToArray(),
+            Opportunities = opportunities,
+            Plan = plan,
+            MissingPlanEvidenceCount = missingPlanEvidenceCount,
+            Search = normalizedSearch,
+            Category = normalizedCategory
+        };
+    }
+
     private static bool MatchesSearch(EvidencePrototypeEntry entry, string search)
     {
         if (search.Length == 0)
@@ -253,9 +343,12 @@ public static class EvidenceWorkspacePrototype
             {
                 entry.Category,
                 entry.Title,
+                entry.StartDate?.ToString("yyyy-MM-dd") ?? string.Empty,
+                entry.EndDate?.ToString("yyyy-MM-dd") ?? string.Empty,
                 entry.Context,
                 entry.Contribution,
                 entry.Outcome,
+                entry.Metric ?? string.Empty,
                 entry.SourceNote ?? string.Empty,
                 entry.SourceUrl ?? string.Empty,
                 string.Join(' ', entry.Tags)

@@ -33,6 +33,12 @@ else
 
 <section class="mb-4">
     <h2 class="h5">Selected factual evidence</h2>
+    @if (Model.MissingEvidenceIds.Count > 0)
+    {
+        <p class="alert alert-warning" role="alert">
+            Missing evidence references (@string.Join(", ", Model.MissingEvidenceIds)) are not sent for generation. Review or remove them in the plan.
+        </p>
+    }
     @if (Model.SelectedEvidence.Count == 0)
     {
         <p>No evidence will be processed. Any resulting gaps are suggestions, not factual claims.</p>
@@ -41,7 +47,37 @@ else
     {
         <article class="border rounded p-3 mb-2">
             <h3 class="h6">@entry.Category: @entry.Title</h3>
-            <p class="mb-0">@entry.Description</p>
+            @if (entry.StartDate.HasValue || entry.EndDate.HasValue)
+            {
+                <p>Dates: @entry.StartDate?.ToString("yyyy-MM-dd") – @entry.EndDate?.ToString("yyyy-MM-dd")</p>
+            }
+            <dl class="mb-0">
+                <dt>Context</dt><dd>@entry.Context</dd>
+                @if (entry.Contribution is not null)
+                {
+                    <dt>My contribution</dt><dd>@entry.Contribution</dd>
+                }
+                @if (entry.Outcome is not null)
+                {
+                    <dt>Outcome</dt><dd>@entry.Outcome</dd>
+                }
+                @if (entry.Metric is not null)
+                {
+                    <dt>Metric</dt><dd>@entry.Metric</dd>
+                }
+                @if (entry.Tags is not null)
+                {
+                    <dt>Tags</dt><dd>@entry.Tags</dd>
+                }
+                @if (entry.SourceNote is not null)
+                {
+                    <dt>Source note</dt><dd>@entry.SourceNote</dd>
+                }
+                @if (entry.SourceUrl is not null)
+                {
+                    <dt>Source URL</dt><dd>@entry.SourceUrl</dd>
+                }
+            </dl>
         </article>
     }
 </section>

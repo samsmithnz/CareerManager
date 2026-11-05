@@ -39,14 +39,18 @@ public sealed class CareerPlansController(
         var plan = await context.CareerPlans
             .AsNoTracking()
             .SingleOrDefaultAsync(item => item.OwnerId == ownerId, cancellationToken);
+        var missingEvidenceIds = plan is null
+            ? []
+            : await FindMissingEvidenceIds(plan, ownerId, cancellationToken);
         return View(new CareerPlanIndexViewModel
         {
             Plan = plan,
-            IsApproved = plan is not null && await IsApprovedAsync(plan, ownerId, cancellationToken)
+            IsApproved = plan is not null && await IsApprovedAsync(plan, ownerId, cancellationToken),
+            MissingEvidenceCount = missingEvidenceIds.Length
         });
     }
 
-    public async Task<IActionResult> Create(CancellationToken cancellationToken)
+    public async Task<IActionResult> Create(int[]? selectedEvidenceIds, CancellationToken cancellationToken)
     {
         var ownerId = await GetRegisteredOwnerIdAsync(cancellationToken);
         if (ownerId is null)
@@ -59,7 +63,11 @@ public sealed class CareerPlansController(
             return RedirectToAction(nameof(Index));
         }
 
-        return View("Edit", await CreateEditViewModel(ownerId, null, null, cancellationToken));
+        return View("Edit", await CreateEditViewModel(
+            ownerId,
+            null,
+            new CareerPlanInputModel { SelectedEvidenceIds = selectedEvidenceIds ?? [] },
+            cancellationToken));
     }
 
     [HttpPost]
@@ -81,6 +89,10 @@ public sealed class CareerPlansController(
         if (selectedEvidence is null)
         {
             return BadRequest("Select at most 10 distinct evidence records owned by the authenticated owner.");
+        }
+        if ((input.MissingEvidenceIds ?? []).Length > 0)
+        {
+            return BadRequest("A new plan cannot include references to deleted evidence.");
         }
 
         if (!ModelState.IsValid)
@@ -108,7 +120,10 @@ public sealed class CareerPlansController(
         return RedirectToAction(nameof(Edit), new { id = plan.Id });
     }
 
-    public async Task<IActionResult> Edit(int id, CancellationToken cancellationToken)
+    public async Task<IActionResult> Edit(
+        int id,
+        int[]? selectedEvidenceIds,
+        CancellationToken cancellationToken)
     {
         var ownerId = await GetRegisteredOwnerIdAsync(cancellationToken);
         if (ownerId is null)
@@ -117,9 +132,16 @@ public sealed class CareerPlansController(
         }
 
         var plan = await FindOwnedPlan(id, ownerId, cancellationToken);
-        return plan is null
-            ? NotFound()
-            : View(await CreateEditViewModel(ownerId, plan, null, cancellationToken));
+        if (plan is null)
+        {
+            return NotFound();
+        }
+
+        var missingEvidenceIds = await FindMissingEvidenceIds(plan, ownerId, cancellationToken);
+        var input = selectedEvidenceIds is { Length: > 0 }
+            ? CreateInputModel(plan, selectedEvidenceIds.ToHashSet(), missingEvidenceIds)
+            : null;
+        return View(await CreateEditViewModel(ownerId, plan, input, cancellationToken));
     }
 
     [HttpPost]
@@ -151,6 +173,19 @@ public sealed class CareerPlansController(
         {
             return BadRequest("Select at most 10 distinct evidence records owned by the authenticated owner.");
         }
+        var missingEvidenceIds = await FindMissingEvidenceIds(plan, ownerId, cancellationToken);
+        var retainedMissingIds = input.MissingEvidenceIds ?? [];
+        if (retainedMissingIds.Distinct().Count() != retainedMissingIds.Length
+            || retainedMissingIds.Except(missingEvidenceIds).Any())
+        {
+            return BadRequest("Keep only missing evidence references already attached to this plan.");
+        }
+        if (selectedEvidence.Count + retainedMissingIds.Length > ApplicationGenerationService.MaximumEvidenceCount)
+        {
+            ModelState.AddModelError(
+                nameof(input.SelectedEvidenceIds),
+                "A plan can retain at most 10 live or missing evidence references.");
+        }
 
         if (!ModelState.IsValid)
         {
@@ -158,7 +193,7 @@ public sealed class CareerPlansController(
         }
 
         ApplyInput(plan, input);
-        UpdateEvidenceReferences(plan, ownerId, selectedEvidence);
+        UpdateEvidenceReferences(plan, ownerId, selectedEvidence, retainedMissingIds);
         ClearApproval(plan);
         plan.UpdatedAtUtc = DateTime.UtcNow;
         plan.ConcurrencyToken = Guid.NewGuid();
@@ -189,7 +224,7 @@ public sealed class CareerPlansController(
         }
 
         var evidence = await GetSelectedEvidence(plan, ownerId, cancellationToken);
-        return View(CreateGenerationReviewViewModel(plan, evidence, ownerId));
+        return View(await CreateGenerationReviewViewModel(plan, evidence, ownerId, cancellationToken));
     }
 
     [HttpPost]
@@ -213,7 +248,7 @@ public sealed class CareerPlansController(
         }
 
         var evidence = await GetSelectedEvidence(plan, ownerId, cancellationToken);
-        var review = CreateGenerationReviewViewModel(plan, evidence, ownerId, input.Consent);
+        var review = await CreateGenerationReviewViewModel(plan, evidence, ownerId, cancellationToken, input.Consent);
         if (!IsValidPreviewToken(input.PreviewToken, review.PreviewToken))
         {
             return Conflict("The plan or selected evidence changed. Review the current data again before generating.");
@@ -268,6 +303,7 @@ public sealed class CareerPlansController(
         {
             Plan = plan,
             SelectedEvidence = evidence,
+            MissingEvidenceIds = review.MissingEvidenceIds,
             EvidenceGaps = gaps,
             Recommendations = recommendations,
             NextActions = nextActions,
@@ -388,6 +424,7 @@ public sealed class CareerPlansController(
 
         plan.ApprovedAtUtc = DateTime.UtcNow;
         plan.ApprovedContentHash = await GetContentHashAsync(plan, ownerId, cancellationToken);
+        plan.RequiresFactualReview = false;
         plan.UpdatedAtUtc = DateTime.UtcNow;
         plan.ConcurrencyToken = Guid.NewGuid();
         try
@@ -409,16 +446,27 @@ public sealed class CareerPlansController(
         CancellationToken cancellationToken)
     {
         var evidence = await GetAvailableEvidence(ownerId, cancellationToken);
+        var missingEvidenceIds = plan is null
+            ? []
+            : await FindMissingEvidenceIds(plan, ownerId, cancellationToken);
         var selectedIds = input?.SelectedEvidenceIds.ToHashSet()
-            ?? plan?.EvidenceReferences.Select(reference => reference.CareerEntryId).ToHashSet()
+            ?? plan?.EvidenceReferences
+                .Select(reference => reference.CareerEntryId)
+                .Except(missingEvidenceIds)
+                .ToHashSet()
             ?? [];
+        var editInput = input ?? (plan is null
+            ? new CareerPlanInputModel()
+            : CreateInputModel(plan, selectedIds, missingEvidenceIds));
         return new CareerPlanEditViewModel
         {
             Id = plan?.Id,
-            Input = input ?? (plan is null ? new CareerPlanInputModel() : CreateInputModel(plan)),
+            Input = editInput,
             AvailableEvidence = evidence,
             SelectedEvidenceIds = selectedIds.Intersect(evidence.Select(entry => entry.Id)).ToHashSet(),
-            IsApproved = plan is not null && await IsApprovedAsync(plan, ownerId, cancellationToken)
+            MissingEvidenceIds = missingEvidenceIds,
+            IsApproved = plan is not null && await IsApprovedAsync(plan, ownerId, cancellationToken),
+            RequiresFactualReview = plan?.RequiresFactualReview ?? false
         };
     }
 
@@ -433,15 +481,17 @@ public sealed class CareerPlansController(
         {
             Plan = plan,
             SelectedEvidence = evidence,
+            MissingEvidenceIds = await FindMissingEvidenceIds(plan, ownerId, cancellationToken),
             Input = input ?? new CareerPlanApprovalInputModel { ConcurrencyToken = plan.ConcurrencyToken },
             IsApproved = await IsApprovedAsync(plan, ownerId, cancellationToken)
         };
     }
 
-    private CareerPlanGenerationReviewViewModel CreateGenerationReviewViewModel(
+    private async Task<CareerPlanGenerationReviewViewModel> CreateGenerationReviewViewModel(
         CareerPlan plan,
         IReadOnlyList<CareerEntry> evidence,
         string ownerId,
+        CancellationToken cancellationToken,
         bool consent = false)
     {
         var request = CreateGenerationRequest(plan, evidence);
@@ -449,6 +499,7 @@ public sealed class CareerPlansController(
         {
             Plan = plan,
             SelectedEvidence = evidence,
+            MissingEvidenceIds = await FindMissingEvidenceIds(plan, ownerId, cancellationToken),
             PreviewToken = CreatePreviewToken(plan, ownerId, request),
             ProviderName = generationService.ProviderName,
             ModelName = generationService.ModelName,
@@ -511,7 +562,9 @@ public sealed class CareerPlansController(
             plan.TargetRoles,
             plan.TargetRoles,
             $"Strengths to build on:\n{plan.Strengths}\nInterests:\n{plan.Interests}",
-            evidence.Select(entry => new GenerationEvidence(entry.Id, entry.Category, entry.Title, entry.Description)).ToArray());
+            evidence.Select(entry => new GenerationEvidence(
+                entry.Id, entry.Category, entry.Title, entry.Context, entry.StartDate, entry.EndDate,
+                entry.Contribution, entry.Outcome, entry.Metric, entry.Tags, entry.SourceNote, entry.SourceUrl)).ToArray());
 
     private static void AddEvidenceReferences(
         CareerPlan plan,
@@ -524,7 +577,6 @@ public sealed class CareerPlansController(
             {
                 OwnerId = ownerId,
                 CareerEntryId = entry.Id,
-                Entry = entry,
                 Plan = plan
             });
         }
@@ -533,9 +585,10 @@ public sealed class CareerPlansController(
     private void UpdateEvidenceReferences(
         CareerPlan plan,
         string ownerId,
-        IReadOnlyList<CareerEntry> evidence)
+        IReadOnlyList<CareerEntry> evidence,
+        IReadOnlyCollection<int> retainedMissingIds)
     {
-        var selectedIds = evidence.Select(entry => entry.Id).ToHashSet();
+        var selectedIds = evidence.Select(entry => entry.Id).Concat(retainedMissingIds).ToHashSet();
         foreach (var reference in plan.EvidenceReferences
                      .Where(reference => !selectedIds.Contains(reference.CareerEntryId))
                      .ToArray())
@@ -551,7 +604,6 @@ public sealed class CareerPlansController(
             {
                 OwnerId = ownerId,
                 CareerEntryId = entry.Id,
-                Entry = entry,
                 Plan = plan
             });
         }
@@ -568,7 +620,10 @@ public sealed class CareerPlansController(
         plan.Progress = input.Progress ?? string.Empty;
     }
 
-    private static CareerPlanInputModel CreateInputModel(CareerPlan plan) =>
+    private static CareerPlanInputModel CreateInputModel(
+        CareerPlan plan,
+        IReadOnlySet<int> selectedIds,
+        IReadOnlyList<int> missingIds) =>
         new()
         {
             ConcurrencyToken = plan.ConcurrencyToken,
@@ -579,7 +634,8 @@ public sealed class CareerPlansController(
             Recommendations = plan.Recommendations,
             NextActions = plan.NextActions,
             Progress = plan.Progress,
-            SelectedEvidenceIds = plan.EvidenceReferences.Select(reference => reference.CareerEntryId).ToArray()
+            SelectedEvidenceIds = selectedIds.ToArray(),
+            MissingEvidenceIds = missingIds.ToArray()
         };
 
     private static void ClearApproval(CareerPlan plan)
@@ -592,6 +648,8 @@ public sealed class CareerPlansController(
         CareerPlan plan,
         string ownerId,
         CancellationToken cancellationToken) =>
+        !plan.RequiresFactualReview
+        &&
         plan.ApprovedAtUtc.HasValue
         && string.Equals(
             plan.ApprovedContentHash,
@@ -603,18 +661,16 @@ public sealed class CareerPlansController(
         string ownerId,
         CancellationToken cancellationToken)
     {
-        var evidence = await context.CareerPlanEvidence
+        var references = await context.CareerPlanEvidence
             .AsNoTracking()
             .Where(reference => reference.OwnerId == ownerId && reference.CareerPlanId == plan.Id)
             .OrderBy(reference => reference.CareerEntryId)
-            .Select(reference => new
-            {
-                reference.CareerEntryId,
-                reference.Entry.Category,
-                reference.Entry.Title,
-                reference.Entry.Description
-            })
             .ToArrayAsync(cancellationToken);
+        var evidenceIds = references.Select(reference => reference.CareerEntryId).ToArray();
+        var evidence = await context.CareerEntries
+            .AsNoTracking()
+            .Where(entry => entry.OwnerId == ownerId && evidenceIds.Contains(entry.Id))
+            .ToDictionaryAsync(entry => entry.Id, cancellationToken);
         var content = JsonSerializer.Serialize(new
         {
             plan.TargetRoles,
@@ -624,7 +680,26 @@ public sealed class CareerPlansController(
             plan.Recommendations,
             plan.NextActions,
             plan.Progress,
-            Evidence = evidence
+            Evidence = references.Select(reference => new
+            {
+                reference.CareerEntryId,
+                Entry = evidence.TryGetValue(reference.CareerEntryId, out var entry)
+                    ? new
+                    {
+                        entry.Category,
+                        entry.Title,
+                        entry.StartDate,
+                        entry.EndDate,
+                        entry.Context,
+                        entry.Contribution,
+                        entry.Outcome,
+                        entry.Metric,
+                        entry.Tags,
+                        entry.SourceNote,
+                        entry.SourceUrl
+                    }
+                    : null
+            })
         }, JsonOptions);
         return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(content)));
     }
@@ -651,6 +726,31 @@ public sealed class CareerPlansController(
             .OrderBy(entry => entry.Category)
             .ThenBy(entry => entry.Title)
             .ToListAsync(cancellationToken);
+    }
+
+    private async Task<int[]> FindMissingEvidenceIds(
+        CareerPlan plan,
+        string ownerId,
+        CancellationToken cancellationToken)
+    {
+        var referencedIds = await context.CareerPlanEvidence
+            .AsNoTracking()
+            .Where(reference => reference.OwnerId == ownerId && reference.CareerPlanId == plan.Id)
+            .Select(reference => reference.CareerEntryId)
+            .Distinct()
+            .ToArrayAsync(cancellationToken);
+        if (referencedIds.Length == 0)
+        {
+            return [];
+        }
+
+        var existingIds = await context.CareerEntries
+            .AsNoTracking()
+            .Where(entry => entry.OwnerId == ownerId && referencedIds.Contains(entry.Id))
+            .Select(entry => entry.Id)
+            .ToArrayAsync(cancellationToken);
+        var existing = existingIds.ToHashSet();
+        return referencedIds.Where(id => !existing.Contains(id)).ToArray();
     }
 
     private async Task<List<CareerEntry>?> FindSelectedEvidence(

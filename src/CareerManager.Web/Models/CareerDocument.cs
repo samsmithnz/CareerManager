@@ -11,6 +11,7 @@ public sealed class CareerDocument
     public Guid ConcurrencyToken { get; set; } = Guid.NewGuid();
     public DateTime? ApprovedAtUtc { get; set; }
     public string? ApprovedContentHash { get; set; }
+    public bool RequiresFactualReview { get; set; }
     public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAtUtc { get; set; } = DateTime.UtcNow;
     public CareerOwner Owner { get; set; } = null!;
