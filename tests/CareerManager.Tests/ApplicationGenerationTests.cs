@@ -206,7 +206,7 @@ public sealed class ApplicationGenerationTests
             Profile = otherProfile,
             Category = "Work",
             Title = "Private evidence",
-            Description = "Not selected by this owner."
+            Context = "Not selected by this owner."
         };
         var otherOpportunity = new CareerOpportunity
         {
@@ -535,7 +535,7 @@ public sealed class ApplicationGenerationTests
             Profile = profile,
             Category = "Achievement",
             Title = "Reporting dashboard",
-            Description = "Built a reporting dashboard with SQL."
+            Context = "Built a reporting dashboard with SQL."
         };
         var opportunity = new CareerOpportunity
         {

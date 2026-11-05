@@ -52,6 +52,9 @@ namespace CareerManager.Data.Migrations
                         .HasMaxLength(256)
                         .HasColumnType("nvarchar(256)");
 
+                    b.Property<bool>("RequiresFactualReview")
+                        .HasColumnType("bit");
+
                     b.Property<string>("Text")
                         .IsRequired()
                         .HasMaxLength(12000)
@@ -109,8 +112,23 @@ namespace CareerManager.Data.Migrations
                         .HasMaxLength(80)
                         .HasColumnType("nvarchar(80)");
 
-                    b.Property<string>("Description")
+                    b.Property<string>("Context")
                         .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<string>("Contribution")
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<DateOnly?>("EndDate")
+                        .HasColumnType("date");
+
+                    b.Property<string>("Metric")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("Outcome")
                         .HasMaxLength(4000)
                         .HasColumnType("nvarchar(4000)");
 
@@ -122,9 +140,24 @@ namespace CareerManager.Data.Migrations
                     b.Property<int>("ProfileId")
                         .HasColumnType("int");
 
+                    b.Property<string>("SourceNote")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<string>("SourceUrl")
+                        .HasMaxLength(2048)
+                        .HasColumnType("nvarchar(2048)");
+
+                    b.Property<DateOnly?>("StartDate")
+                        .HasColumnType("date");
+
                     b.Property<string>("SyntheticKey")
                         .HasMaxLength(80)
                         .HasColumnType("nvarchar(80)");
+
+                    b.Property<string>("Tags")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
 
                     b.Property<string>("Title")
                         .IsRequired()
@@ -132,6 +165,8 @@ namespace CareerManager.Data.Migrations
                         .HasColumnType("nvarchar(200)");
 
                     b.HasKey("Id");
+
+                    b.HasAlternateKey("OwnerId", "Id");
 
                     b.HasIndex("OwnerId", "ProfileId", "SyntheticKey")
                         .IsUnique()
@@ -273,6 +308,9 @@ namespace CareerManager.Data.Migrations
                         .IsRequired()
                         .HasMaxLength(4000)
                         .HasColumnType("nvarchar(4000)");
+
+                    b.Property<bool>("RequiresFactualReview")
+                        .HasColumnType("bit");
 
                     b.Property<string>("Strengths")
                         .IsRequired()
@@ -423,21 +461,12 @@ namespace CareerManager.Data.Migrations
 
             modelBuilder.Entity("CareerManager.Models.CareerPlanEvidence", b =>
                 {
-                    b.HasOne("CareerManager.Models.CareerEntry", "Entry")
-                        .WithMany()
-                        .HasForeignKey("OwnerId", "CareerEntryId")
-                        .HasPrincipalKey("OwnerId", "Id")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
                     b.HasOne("CareerManager.Models.CareerPlan", "Plan")
                         .WithMany("EvidenceReferences")
                         .HasForeignKey("OwnerId", "CareerPlanId")
                         .HasPrincipalKey("OwnerId", "Id")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("Entry");
 
                     b.Navigation("Plan");
                 });

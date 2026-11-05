@@ -140,7 +140,7 @@ public sealed class CareerPlanTests
         Assert.Equal(beforeRecommendations, plan.Recommendations);
         Assert.Equal(beforeActions, plan.NextActions);
         Assert.NotNull(plan.ApprovedAtUtc);
-        Assert.Equal("Built reporting dashboards using SQL for teams.", evidence.Description);
+        Assert.Equal("Built reporting dashboards using SQL for teams.", evidence.Context);
 
         var replaced = await controller.ReplaceGenerated(plan.Id, new CareerPlanGeneratedProposalInputModel
         {
@@ -247,7 +247,7 @@ public sealed class CareerPlanTests
             Profile = profile,
             Category = "Achievement",
             Title = "Reporting dashboard",
-            Description = "Built reporting dashboards using SQL for teams."
+            Context = "Built reporting dashboards using SQL for teams."
         };
         var plan = new CareerPlan
         {
@@ -264,7 +264,6 @@ public sealed class CareerPlanTests
         {
             OwnerId = ownerId,
             CareerEntryId = evidence.Id,
-            Entry = evidence,
             Plan = plan
         });
         context.AddRange(owner, profile, evidence, plan);

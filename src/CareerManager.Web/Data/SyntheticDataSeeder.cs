@@ -55,7 +55,7 @@ public static class SyntheticDataSeeder
                     SyntheticKey = entry.Key,
                     Category = entry.Category,
                     Title = entry.Title,
-                    Description = entry.Description
+                    Context = entry.Description
                 });
             }
         }

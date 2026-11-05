@@ -511,7 +511,9 @@ public sealed class CareerPlansController(
             plan.TargetRoles,
             plan.TargetRoles,
             $"Strengths to build on:\n{plan.Strengths}\nInterests:\n{plan.Interests}",
-            evidence.Select(entry => new GenerationEvidence(entry.Id, entry.Category, entry.Title, entry.Description)).ToArray());
+            evidence.Select(entry => new GenerationEvidence(
+                entry.Id, entry.Category, entry.Title, entry.Context, entry.StartDate, entry.EndDate,
+                entry.Contribution, entry.Outcome, entry.Metric, entry.Tags, entry.SourceNote, entry.SourceUrl)).ToArray());
 
     private static void AddEvidenceReferences(
         CareerPlan plan,
@@ -524,7 +526,6 @@ public sealed class CareerPlansController(
             {
                 OwnerId = ownerId,
                 CareerEntryId = entry.Id,
-                Entry = entry,
                 Plan = plan
             });
         }
@@ -551,7 +552,6 @@ public sealed class CareerPlansController(
             {
                 OwnerId = ownerId,
                 CareerEntryId = entry.Id,
-                Entry = entry,
                 Plan = plan
             });
         }
@@ -603,18 +603,16 @@ public sealed class CareerPlansController(
         string ownerId,
         CancellationToken cancellationToken)
     {
-        var evidence = await context.CareerPlanEvidence
+        var references = await context.CareerPlanEvidence
             .AsNoTracking()
             .Where(reference => reference.OwnerId == ownerId && reference.CareerPlanId == plan.Id)
             .OrderBy(reference => reference.CareerEntryId)
-            .Select(reference => new
-            {
-                reference.CareerEntryId,
-                reference.Entry.Category,
-                reference.Entry.Title,
-                reference.Entry.Description
-            })
             .ToArrayAsync(cancellationToken);
+        var evidenceIds = references.Select(reference => reference.CareerEntryId).ToArray();
+        var evidence = await context.CareerEntries
+            .AsNoTracking()
+            .Where(entry => entry.OwnerId == ownerId && evidenceIds.Contains(entry.Id))
+            .ToDictionaryAsync(entry => entry.Id, cancellationToken);
         var content = JsonSerializer.Serialize(new
         {
             plan.TargetRoles,
@@ -624,7 +622,26 @@ public sealed class CareerPlansController(
             plan.Recommendations,
             plan.NextActions,
             plan.Progress,
-            Evidence = evidence
+            Evidence = references.Select(reference => new
+            {
+                reference.CareerEntryId,
+                Entry = evidence.TryGetValue(reference.CareerEntryId, out var entry)
+                    ? new
+                    {
+                        entry.Category,
+                        entry.Title,
+                        entry.StartDate,
+                        entry.EndDate,
+                        entry.Context,
+                        entry.Contribution,
+                        entry.Outcome,
+                        entry.Metric,
+                        entry.Tags,
+                        entry.SourceNote,
+                        entry.SourceUrl
+                    }
+                    : null
+            })
         }, JsonOptions);
         return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(content)));
     }

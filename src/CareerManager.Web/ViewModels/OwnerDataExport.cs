@@ -23,7 +23,15 @@ public sealed record CareerEntryExport(
     string? SyntheticKey,
     string Category,
     string Title,
-    string Description);
+    string Context,
+    DateOnly? StartDate,
+    DateOnly? EndDate,
+    string? Contribution,
+    string? Outcome,
+    string? Metric,
+    string? Tags,
+    string? SourceNote,
+    string? SourceUrl);
 
 public sealed record CareerOpportunityExport(
     int Id,

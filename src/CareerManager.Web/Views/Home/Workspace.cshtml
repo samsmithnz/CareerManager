@@ -5,27 +5,31 @@
 }
 
 <header class="workspace-heading mb-4">
-    <p class="text-uppercase text-primary small fw-semibold mb-1">Your career, connected</p>
+    <p class="text-uppercase text-primary small fw-semibold mb-1">Your private career workspace</p>
     <h1>Career workspace</h1>
-    <p class="text-secondary mb-0">Your career story, evidence, growth plan, and interests in one place.</p>
+    <p class="text-secondary mb-0">Persisted career evidence and planning, with illustrative reflection prompts kept separate.</p>
 </header>
 
-<div class="alert alert-info" role="note">
-    <strong>Prototype view:</strong> sample content only. Nothing is saved.
-    Sign-in and owner checks are required before real career data can be managed.
-</div>
+<p class="mb-4">
+    <a class="btn btn-primary" asp-controller="CareerEvidence" asp-action="Create">Add career evidence</a>
+    <a class="btn btn-outline-primary" asp-controller="CareerPlans" asp-action="Index">Open career plan</a>
+</p>
 
 <div class="row g-4 mb-4 workspace-grid">
     <div class="col-lg-6">
         <section class="card h-100 workspace-card" aria-labelledby="resume-heading">
             <div class="card-body">
                 <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
-                    <h2 class="h4 mb-0" id="resume-heading">Resume</h2>
-                    <span class="badge rounded-pill text-bg-light border">Career snapshot</span>
+                    <h2 class="h4 mb-0" id="resume-heading">Resume evidence</h2>
+                    <span class="badge rounded-pill text-bg-light border">Persisted records</span>
                 </div>
                 <h3 class="h6">Professional summary</h3>
                 <p class="text-secondary">@Model.Resume.Summary</p>
                 <h3 class="h6">Experience</h3>
+                @if (Model.Resume.Experience.Count == 0)
+                {
+                    <p class="small text-secondary">No saved work experience yet.</p>
+                }
                 @foreach (var entry in Model.Resume.Experience)
                 {
                     <div class="workspace-note mb-3">
@@ -51,9 +55,13 @@
             <div class="card-body">
                 <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
                     <h2 class="h4 mb-0" id="brag-heading">Career brag doc</h2>
-                    <span class="badge rounded-pill text-bg-light border">Living record</span>
+                    <span class="badge rounded-pill text-bg-light border">Persisted achievements</span>
                 </div>
                 <p class="text-secondary small">Specific accomplishments that support your career story.</p>
+                @if (Model.Accomplishments.Count == 0)
+                {
+                    <p class="small text-secondary">No saved achievements yet.</p>
+                }
                 @foreach (var entry in Model.Accomplishments)
                 {
                     <article class="workspace-note mb-3">
@@ -75,11 +83,18 @@
             <div class="card-body">
                 <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
                     <h2 class="h4 mb-0" id="plan-heading">Career development plan</h2>
-                    <span class="badge rounded-pill text-bg-light border">Looking ahead</span>
+                    <span class="badge rounded-pill text-bg-light border">Saved plan or blank state</span>
                 </div>
-                <p class="text-secondary small">Turn your strengths, interests, and gaps into practical next steps.</p>
+                <p class="text-secondary small">Saved owner-entered goals and actions are planning records, not completed achievements.</p>
                 <h3 class="h6">Goal</h3>
-                <p class="workspace-note">@Model.DevelopmentPlan.Goal</p>
+                @if (Model.Plan is null)
+                {
+                    <p class="workspace-note">No saved career plan.</p>
+                }
+                else
+                {
+                    <p class="workspace-note">@Model.DevelopmentPlan.Goal</p>
+                }
                 <h3 class="h6">Next actions</h3>
                 <ol class="plan-actions">
                     @foreach (var action in Model.DevelopmentPlan.Actions)
@@ -88,9 +103,16 @@
                     }
                 </ol>
                 <h3 class="h6">Milestone</h3>
-                <p class="text-secondary">@Model.DevelopmentPlan.Milestone</p>
-                <h3 class="h6">Review point</h3>
-                <p class="text-secondary">@Model.DevelopmentPlan.Review</p>
+                @if (!string.IsNullOrWhiteSpace(Model.DevelopmentPlan.Milestone))
+                {
+                    <h3 class="h6">Saved progress</h3>
+                    <p class="text-secondary">@Model.DevelopmentPlan.Milestone</p>
+                }
+                @if (!string.IsNullOrWhiteSpace(Model.DevelopmentPlan.Review))
+                {
+                    <h3 class="h6">Review guidance</h3>
+                    <p class="text-secondary">@Model.DevelopmentPlan.Review</p>
+                }
                 <p class="small text-secondary mb-0">Plans are intentions, not proof of completed work. Record outcomes in your brag doc as they happen.</p>
             </div>
         </section>
@@ -100,9 +122,9 @@
             <div class="card-body">
                 <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
                     <h2 class="h4 mb-0" id="interests-heading">Interests &amp; career fit</h2>
-                    <span class="badge rounded-pill text-bg-light border">Three-circle reflection</span>
+                    <span class="badge rounded-pill text-bg-light border">Persisted interests + illustrative prompt</span>
                 </div>
-                <p class="text-secondary small mb-2">Explore your career sweet spot, without turning every interest into income.</p>
+                <p class="text-secondary small mb-2">Saved strengths and interests are listed separately from the illustrative market reflection below.</p>
                 <svg class="career-venn" viewBox="0 0 760 620" role="img" aria-labelledby="venn-title venn-description">
                     <title id="venn-title">Finding your career sweet spot</title>
                     <desc id="venn-description">What you are good at, what you like doing, and what makes money overlap at your career sweet spot.</desc>
@@ -144,9 +166,9 @@
 </aside>
 
 <details class="card supporting-evidence" open="@(Model.Search.Length > 0 || Model.Category.Length > 0 || Model.SelectedEntries.Count > 0)">
-<summary class="card-header">Supporting evidence: search and select sample records</summary>
+<summary class="card-header">Persisted supporting evidence: search and select records</summary>
 <div class="card-body">
-<p class="text-secondary small">These underlying records can support your resume and brag doc. Selection is carried only in the page URL; comparison and generation are not implemented.</p>
+<p class="text-secondary small">These owner-scoped SQL records can support a role comparison, document draft, or career plan. No illustrative reflection is treated as factual evidence.</p>
 <section class="card mb-4" aria-labelledby="search-heading">
     <div class="card-body">
         <h2 class="h5" id="search-heading">Find evidence</h2>
@@ -183,7 +205,7 @@
 <section class="mb-4" aria-labelledby="selection-heading">
     <div class="d-flex flex-wrap justify-content-between align-items-baseline gap-2 mb-3">
         <h2 class="h4 mb-0" id="selection-heading">Select evidence</h2>
-        <span class="text-secondary">@Model.SelectedEntries.Count selected for later comparison</span>
+        <span class="text-secondary">@Model.SelectedEntries.Count selected</span>
     </div>
     <form asp-controller="Home" asp-action="Workspace" method="get">
         <input type="hidden" name="search" value="@Model.Search" />
@@ -227,17 +249,23 @@
                                     <input class="form-check-input" type="checkbox" name="selectedIds"
                                            id="select-evidence-@entry.Id" value="@entry.Id" checked="@isSelected" />
                                     <label class="form-check-label" for="select-evidence-@entry.Id">
-                                        Select for later comparison
+                                        Select for comparison
                                     </label>
                                 </div>
                             </div>
                             <dl class="row mb-0">
                                 <dt class="col-sm-3">Context</dt>
                                 <dd class="col-sm-9">@entry.Context</dd>
-                                <dt class="col-sm-3">My contribution</dt>
-                                <dd class="col-sm-9">@entry.Contribution</dd>
-                                <dt class="col-sm-3">Outcome</dt>
-                                <dd class="col-sm-9">@entry.Outcome</dd>
+                                @if (!string.IsNullOrWhiteSpace(entry.Contribution))
+                                {
+                                    <dt class="col-sm-3">My contribution</dt>
+                                    <dd class="col-sm-9">@entry.Contribution</dd>
+                                }
+                                @if (!string.IsNullOrWhiteSpace(entry.Outcome))
+                                {
+                                    <dt class="col-sm-3">Outcome</dt>
+                                    <dd class="col-sm-9">@entry.Outcome</dd>
+                                }
                                 @if (entry.Metric is not null)
                                 {
                                     <dt class="col-sm-3">Metric</dt>
@@ -267,6 +295,11 @@
                                     }
                                 </dd>
                             </dl>
+                            <div class="mt-3">
+                                <a asp-controller="CareerEvidence" asp-action="Edit" asp-route-id="@entry.Id">Edit evidence</a>
+                                <span aria-hidden="true"> · </span>
+                                <a asp-controller="CareerEvidence" asp-action="Delete" asp-route-id="@entry.Id">Delete evidence</a>
+                            </div>
                         </div>
                     </article>
                 </div>
@@ -274,7 +307,7 @@
             @if (Model.Entries.Count == 0)
             {
                 <div class="col-12">
-                    <p class="text-secondary">No synthetic examples match these filters.</p>
+                    <p class="text-secondary">No saved records match these filters.</p>
                 </div>
             }
         </div>
@@ -284,5 +317,36 @@
         }
     </form>
 </section>
+@if (Model.SelectedEntries.Count > 0)
+{
+    <section class="border-top pt-3" aria-labelledby="selected-evidence-heading">
+        <h2 class="h5" id="selected-evidence-heading">Use selected evidence</h2>
+        <form asp-controller="ApplicationDrafts" asp-action="Compare" method="get" class="row g-2 align-items-end mb-3">
+            <div class="col-md-8">
+                <label class="form-label" for="comparison-opportunity">Opportunity for comparison</label>
+                <select class="form-select" id="comparison-opportunity" name="id" required>
+                    <option value="">Select an opportunity</option>
+                    @foreach (var opportunity in Model.Opportunities)
+                    {
+                        <option value="@opportunity.Id">@opportunity.Title at @opportunity.Company</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-4">
+                @foreach (var entry in Model.SelectedEntries)
+                {
+                    <input type="hidden" name="selectedEvidenceIds" value="@entry.Id" />
+                }
+                <button class="btn btn-outline-primary w-100" type="submit" disabled="@(Model.Opportunities.Count == 0)">Compare selection</button>
+            </div>
+        </form>
+        @if (Model.Plan is not null)
+        {
+            <a class="btn btn-outline-primary" asp-controller="CareerPlans" asp-action="Edit" asp-route-id="@Model.Plan.Id">
+                Review evidence selection in career plan
+            </a>
+        }
+    </section>
+}
 </div>
 </details>

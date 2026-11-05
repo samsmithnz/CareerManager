@@ -1,0 +1,83 @@
+@model CareerManager.ViewModels.CareerEvidenceEditViewModel
+
+@{
+    ViewData["Title"] = Model.Id.HasValue ? "Edit career evidence" : "Add career evidence";
+    var action = Model.Id.HasValue ? "Edit" : "Create";
+}
+
+<h1>@ViewData["Title"]</h1>
+<p>Save only facts you can support. Dates, results, metrics, and sources are optional.</p>
+
+@if (Model.RequiresFactualReview)
+{
+    <p class="alert alert-warning" role="alert">This evidence is referenced by saved documents or a career plan. Saving changes keeps their text unchanged and requires factual review again.</p>
+}
+
+<form asp-action="@action" asp-route-id="@Model.Id" method="post">
+    <div asp-validation-summary="All" class="text-danger" role="alert"></div>
+    <div class="mb-3">
+        <label asp-for="Input.Category" class="form-label">Category</label>
+        <select asp-for="Input.Category" class="form-select">
+            <option value="">Select a category</option>
+            @foreach (var category in Model.Categories)
+            {
+                <option value="@category">@category</option>
+            }
+        </select>
+        <span asp-validation-for="Input.Category" class="text-danger"></span>
+    </div>
+    <div class="mb-3">
+        <label asp-for="Input.Title" class="form-label">Title</label>
+        <input asp-for="Input.Title" class="form-control" />
+        <span asp-validation-for="Input.Title" class="text-danger"></span>
+    </div>
+    <div class="mb-3">
+        <label asp-for="Input.Context" class="form-label">Context</label>
+        <textarea asp-for="Input.Context" class="form-control" rows="4"></textarea>
+        <span asp-validation-for="Input.Context" class="text-danger"></span>
+    </div>
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <label asp-for="Input.StartDate" class="form-label">Start date</label>
+            <input asp-for="Input.StartDate" class="form-control" />
+            <span asp-validation-for="Input.StartDate" class="text-danger"></span>
+        </div>
+        <div class="col-md-6 mb-3">
+            <label asp-for="Input.EndDate" class="form-label">End date</label>
+            <input asp-for="Input.EndDate" class="form-control" />
+            <span asp-validation-for="Input.EndDate" class="text-danger"></span>
+        </div>
+    </div>
+    <div class="mb-3">
+        <label asp-for="Input.Contribution" class="form-label">My contribution (optional)</label>
+        <textarea asp-for="Input.Contribution" class="form-control" rows="3"></textarea>
+        <span asp-validation-for="Input.Contribution" class="text-danger"></span>
+    </div>
+    <div class="mb-3">
+        <label asp-for="Input.Outcome" class="form-label">Outcome (optional)</label>
+        <textarea asp-for="Input.Outcome" class="form-control" rows="3"></textarea>
+        <span asp-validation-for="Input.Outcome" class="text-danger"></span>
+    </div>
+    <div class="mb-3">
+        <label asp-for="Input.Metric" class="form-label">Metric (optional; leave blank if unknown)</label>
+        <input asp-for="Input.Metric" class="form-control" />
+        <span asp-validation-for="Input.Metric" class="text-danger"></span>
+    </div>
+    <div class="mb-3">
+        <label asp-for="Input.Tags" class="form-label">Tags (comma-separated, optional)</label>
+        <input asp-for="Input.Tags" class="form-control" />
+        <span asp-validation-for="Input.Tags" class="text-danger"></span>
+    </div>
+    <div class="mb-3">
+        <label asp-for="Input.SourceNote" class="form-label">Source note (optional)</label>
+        <textarea asp-for="Input.SourceNote" class="form-control" rows="2"></textarea>
+        <span asp-validation-for="Input.SourceNote" class="text-danger"></span>
+    </div>
+    <div class="mb-3">
+        <label asp-for="Input.SourceUrl" class="form-label">Source URL (optional)</label>
+        <input asp-for="Input.SourceUrl" class="form-control" type="url" />
+        <span asp-validation-for="Input.SourceUrl" class="text-danger"></span>
+    </div>
+    <button class="btn btn-primary" type="submit">Save evidence</button>
+    <a class="btn btn-outline-secondary" asp-controller="Home" asp-action="Workspace">Cancel</a>
+</form>

@@ -142,7 +142,7 @@ public sealed class OpportunityEndpointTests
                     Profile = profile,
                     Category = "Achievement",
                     Title = "Reporting dashboard",
-                    Description = "Built reporting dashboards using SQL for teams."
+                    Context = "Built reporting dashboards using SQL for teams."
                 };
                 var plan = new CareerPlan
                 {
@@ -159,7 +159,6 @@ public sealed class OpportunityEndpointTests
                 {
                     OwnerId = owner.Id,
                     CareerEntryId = evidence.Id,
-                    Entry = evidence,
                     Plan = plan
                 });
                 context.AddRange(owner, profile, evidence, plan);
@@ -299,7 +298,7 @@ public sealed class OpportunityEndpointTests
                     Profile = profile,
                     Category = "Skill",
                     Title = "Safe title",
-                    Description = "A synthetic owner-selected skill."
+                    Context = "A synthetic owner-selected skill."
                 };
                 var opportunity = new CareerOpportunity
                 {
@@ -448,7 +447,7 @@ public sealed class OpportunityEndpointTests
                     ProfileId = profileA.Id,
                     Category = "Achievement",
                     Title = "Private achievement A",
-                    Description = "A detailed career achievement."
+                    Context = "A detailed career achievement."
                 };
                 var entryB = new CareerEntry
                 {
@@ -456,7 +455,7 @@ public sealed class OpportunityEndpointTests
                     ProfileId = profileB.Id,
                     Category = "Achievement",
                     Title = "Private achievement B",
-                    Description = "Other owner's private data."
+                    Context = "Other owner's private data."
                 };
                 var opportunity = new CareerOpportunity
                 {
@@ -677,7 +676,7 @@ public sealed class OpportunityEndpointTests
                     Profile = profile,
                     Category = "Achievement",
                     Title = "Verified dashboard",
-                    Description = "Built reporting dashboards for the analytics team."
+                    Context = "Built reporting dashboards for the analytics team."
                 };
                 var opportunity = new CareerOpportunity
                 {

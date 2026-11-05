@@ -43,7 +43,38 @@ else
     {
         <article class="border rounded p-3 mb-2">
             <h4 class="h6">@entry.Category: @entry.Title</h4>
-            <p class="mb-0">@entry.Description</p>
+            @if (entry.StartDate.HasValue || entry.EndDate.HasValue)
+            {
+                <p>Dates: @entry.StartDate?.ToString("yyyy-MM-dd") – @entry.EndDate?.ToString("yyyy-MM-dd")</p>
+            }
+            <dl class="mb-0">
+                <dt>Context</dt>
+                <dd>@entry.Context</dd>
+                @if (entry.Contribution is not null)
+                {
+                    <dt>My contribution</dt><dd>@entry.Contribution</dd>
+                }
+                @if (entry.Outcome is not null)
+                {
+                    <dt>Outcome</dt><dd>@entry.Outcome</dd>
+                }
+                @if (entry.Metric is not null)
+                {
+                    <dt>Metric</dt><dd>@entry.Metric</dd>
+                }
+                @if (entry.Tags is not null)
+                {
+                    <dt>Tags</dt><dd>@entry.Tags</dd>
+                }
+                @if (entry.SourceNote is not null)
+                {
+                    <dt>Source note</dt><dd>@entry.SourceNote</dd>
+                }
+                @if (entry.SourceUrl is not null)
+                {
+                    <dt>Source URL</dt><dd><a href="@entry.SourceUrl" rel="noopener noreferrer">@entry.SourceUrl</a></dd>
+                }
+            </dl>
         </article>
     }
 </section>

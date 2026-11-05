@@ -4,7 +4,31 @@ using System.Collections.Concurrent;
 
 namespace CareerManager.Services;
 
-public sealed record GenerationEvidence(int Id, string Category, string Title, string Description);
+public sealed record GenerationEvidence(
+    int Id,
+    string Category,
+    string Title,
+    string Description,
+    DateOnly? StartDate = null,
+    DateOnly? EndDate = null,
+    string? Contribution = null,
+    string? Outcome = null,
+    string? Metric = null,
+    string? Tags = null,
+    string? SourceNote = null,
+    string? SourceUrl = null)
+{
+    public int CharacterLength =>
+        Category.Length + Title.Length + Description.Length
+        + (StartDate?.ToString("yyyy-MM-dd").Length ?? 0)
+        + (EndDate?.ToString("yyyy-MM-dd").Length ?? 0)
+        + (Contribution?.Length ?? 0)
+        + (Outcome?.Length ?? 0)
+        + (Metric?.Length ?? 0)
+        + (Tags?.Length ?? 0)
+        + (SourceNote?.Length ?? 0)
+        + (SourceUrl?.Length ?? 0);
+}
 
 public sealed record ApplicationGenerationRequest(
     string Company,
@@ -139,7 +163,7 @@ public sealed class ApplicationGenerationService(IApplicationGenerationProvider 
             + request.RoleTitle.Length
             + request.JobDescription.Length
             + request.CompanyContext.Length
-            + request.Evidence.Sum(evidence => evidence.Category.Length + evidence.Title.Length + evidence.Description.Length);
+            + request.Evidence.Sum(evidence => evidence.CharacterLength);
         if (request.Evidence.Count > MaximumEvidenceCount || inputLength > MaximumInputCharacters)
         {
             throw new ApplicationGenerationException(

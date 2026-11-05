@@ -134,7 +134,7 @@ public sealed class OwnerDataServiceTests
             ProfileId = profile.Id,
             Category = "Achievement",
             Title = "Private evidence",
-            Description = "Private evidence description."
+            Context = "Private evidence description."
         };
         var opportunity = new CareerOpportunity
         {

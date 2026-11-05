@@ -55,7 +55,35 @@ else if (Model.Id.HasValue)
                        checked="@(Model.SelectedEvidenceIds.Contains(entry.Id) ? "checked" : null)" />
                 <label class="form-check-label" for="evidence-@entry.Id">
                     <strong>@entry.Category: @entry.Title</strong>
-                    <span class="d-block">@entry.Description</span>
+                    <span class="d-block">Context: @entry.Context</span>
+                    @if (entry.Contribution is not null)
+                    {
+                        <span class="d-block">My contribution: @entry.Contribution</span>
+                    }
+                    @if (entry.Outcome is not null)
+                    {
+                        <span class="d-block">Outcome: @entry.Outcome</span>
+                    }
+                    @if (entry.Metric is not null)
+                    {
+                        <span class="d-block">Metric: @entry.Metric</span>
+                    }
+                    @if (entry.StartDate.HasValue || entry.EndDate.HasValue)
+                    {
+                        <span class="d-block">Dates: @entry.StartDate?.ToString("yyyy-MM-dd") – @entry.EndDate?.ToString("yyyy-MM-dd")</span>
+                    }
+                    @if (entry.Tags is not null)
+                    {
+                        <span class="d-block">Tags: @entry.Tags</span>
+                    }
+                    @if (entry.SourceNote is not null)
+                    {
+                        <span class="d-block">Source note: @entry.SourceNote</span>
+                    }
+                    @if (entry.SourceUrl is not null)
+                    {
+                        <span class="d-block">Source URL: @entry.SourceUrl</span>
+                    }
                 </label>
             </div>
         }

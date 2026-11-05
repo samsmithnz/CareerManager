@@ -7,7 +7,7 @@
 <h1>Review @Model.Type</h1>
 <p><strong>@Model.Input.Title</strong></p>
 <p>Check every factual statement in the saved content. Attached evidence is a reference only; it does not prove a claim.</p>
-@if (Model.EvidenceReferences.Any(reference => reference.Missing))
+@if (Model.RequiresFactualReview || Model.EvidenceReferences.Any(reference => reference.Missing))
 {
     <div class="alert alert-warning" role="alert">
         Some referenced evidence has been removed. Resolve any unsupported claims before approval.

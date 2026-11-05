@@ -27,7 +27,8 @@ public sealed class OwnerDataService(CareerManagerContext context)
                 .ToListAsync(cancellationToken))
                 .Select(entry => new CareerEntryExport(
                     entry.Id, entry.OwnerId, entry.ProfileId, entry.SyntheticKey,
-                    entry.Category, entry.Title, entry.Description)).ToArray(),
+                    entry.Category, entry.Title, entry.Context, entry.StartDate, entry.EndDate,
+                    entry.Contribution, entry.Outcome, entry.Metric, entry.Tags, entry.SourceNote, entry.SourceUrl)).ToArray(),
             Opportunities = (await context.CareerOpportunities.AsNoTracking()
                 .Where(opportunity => opportunity.OwnerId == ownerId).OrderBy(opportunity => opportunity.Id)
                 .ToListAsync(cancellationToken))

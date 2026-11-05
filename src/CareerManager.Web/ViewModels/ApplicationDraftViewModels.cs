@@ -66,6 +66,7 @@ public sealed class ApplicationDraftEditViewModel
     public required ApplicationDraftApprovalInputModel ApprovalInput { get; init; }
     public DateTime? ApprovedAtUtc { get; init; }
     public bool IsApproved { get; init; }
+    public bool RequiresFactualReview { get; init; }
     public bool CanExport { get; init; }
     public required IReadOnlyList<EvidenceReferenceViewModel> EvidenceReferences { get; init; }
 }
