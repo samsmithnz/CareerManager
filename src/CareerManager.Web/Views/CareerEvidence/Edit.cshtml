@@ -15,6 +15,10 @@
 
 <form asp-action="@action" asp-route-id="@Model.Id" method="post">
     <div asp-validation-summary="All" class="text-danger" role="alert"></div>
+    @if (Model.Id.HasValue)
+    {
+        <input asp-for="Input.ConcurrencyToken" type="hidden" />
+    }
     <div class="mb-3">
         <label asp-for="Input.Category" class="form-label">Category</label>
         <select asp-for="Input.Category" class="form-select">

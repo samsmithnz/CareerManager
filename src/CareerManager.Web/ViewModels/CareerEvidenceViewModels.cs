@@ -4,6 +4,8 @@ namespace CareerManager.ViewModels;
 
 public sealed class CareerEvidenceInputModel : IValidatableObject
 {
+    public Guid ConcurrencyToken { get; set; }
+
     [Required, StringLength(80)]
     public string Category { get; set; } = string.Empty;
 

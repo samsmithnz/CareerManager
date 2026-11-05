@@ -91,9 +91,22 @@ public sealed class CareerEvidenceController(CareerManagerContext context) : Con
             return View(CreateViewModel(id, input, await HasFactualReviewAsync(id, ownerId, cancellationToken)));
         }
 
+        if (entry.ConcurrencyToken != input.ConcurrencyToken)
+        {
+            return await EvidenceChanged(id, input, ownerId, cancellationToken);
+        }
+
         ApplyInput(entry, input);
+        entry.ConcurrencyToken = Guid.NewGuid();
         await MarkReferencingContentForReviewAsync(id, ownerId, cancellationToken);
-        await context.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await context.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            return await EvidenceChanged(id, input, ownerId, cancellationToken);
+        }
         return RedirectToAction("Workspace", "Home");
     }
 
@@ -181,6 +194,7 @@ public sealed class CareerEvidenceController(CareerManagerContext context) : Con
             Category = entry.Category,
             Title = entry.Title,
             Context = entry.Context,
+            ConcurrencyToken = entry.ConcurrencyToken,
             StartDate = entry.StartDate,
             EndDate = entry.EndDate,
             Contribution = entry.Contribution,
@@ -207,6 +221,20 @@ public sealed class CareerEvidenceController(CareerManagerContext context) : Con
         context.CareerEntries.SingleOrDefaultAsync(
             entry => entry.Id == id && entry.OwnerId == ownerId,
             cancellationToken);
+
+    private async Task<IActionResult> EvidenceChanged(
+        int id,
+        CareerEvidenceInputModel input,
+        string ownerId,
+        CancellationToken cancellationToken)
+    {
+        Response.StatusCode = StatusCodes.Status409Conflict;
+        ModelState.AddModelError(string.Empty, "This evidence changed after you opened it. Reload the latest version before saving.");
+        return View("Edit", CreateViewModel(
+            id,
+            input,
+            await HasFactualReviewAsync(id, ownerId, cancellationToken)));
+    }
 
     private async Task<bool> HasFactualReviewAsync(int entryId, string ownerId, CancellationToken cancellationToken)
     {

@@ -848,6 +848,7 @@ public sealed class OpportunityEndpointTests
 
             var editPage = await client.GetAsync($"/CareerEvidence/Edit/{entryId}");
             var editHtml = await editPage.Content.ReadAsStringAsync();
+            var editConcurrencyToken = GetHiddenValue(editHtml, "Input.ConcurrencyToken");
             var invalidEdit = await client.PostAsync($"/CareerEvidence/Edit/{entryId}", new FormUrlEncodedContent(
             [
                 new("Input.Category", "Achievement"),
@@ -856,6 +857,7 @@ public sealed class OpportunityEndpointTests
                 new("Input.StartDate", "2025-01-01"),
                 new("Input.EndDate", "2024-01-01"),
                 new("Input.SourceUrl", "javascript:alert(1)"),
+                new("Input.ConcurrencyToken", editConcurrencyToken),
                 new("__RequestVerificationToken", GetAntiforgeryToken(editHtml))
             ]));
             var invalidHtml = await invalidEdit.Content.ReadAsStringAsync();
@@ -875,9 +877,23 @@ public sealed class OpportunityEndpointTests
                 new("Input.Tags", "edited, tags"),
                 new("Input.SourceNote", "Edited source"),
                 new("Input.SourceUrl", "https://source.example/updated"),
+                new("Input.ConcurrencyToken", GetHiddenValue(invalidHtml, "Input.ConcurrencyToken")),
                 new("__RequestVerificationToken", GetAntiforgeryToken(invalidHtml))
             ]));
             Assert.Equal(System.Net.HttpStatusCode.Redirect, editResponse.StatusCode);
+
+            var staleEdit = await client.PostAsync($"/CareerEvidence/Edit/{entryId}", new FormUrlEncodedContent(
+            [
+                new("Input.Category", "Achievement"),
+                new("Input.Title", "Stale edit must not overwrite"),
+                new("Input.Context", "Stale context."),
+                new("Input.ConcurrencyToken", editConcurrencyToken),
+                new("__RequestVerificationToken", GetAntiforgeryToken(editHtml))
+            ]));
+            var staleEditHtml = await staleEdit.Content.ReadAsStringAsync();
+            Assert.Equal(System.Net.HttpStatusCode.Conflict, staleEdit.StatusCode);
+            Assert.Contains("This evidence changed after you opened it.", staleEditHtml, StringComparison.Ordinal);
+
             using (var scope = factory.Services.CreateScope())
             {
                 var editedEntry = await scope.ServiceProvider.GetRequiredService<CareerManagerContext>()
@@ -886,6 +902,7 @@ public sealed class OpportunityEndpointTests
                 Assert.Equal("Edited owner-authored context.", editedEntry.Context);
                 Assert.Null(editedEntry.Metric);
                 Assert.Equal("edited, tags", editedEntry.Tags);
+                Assert.NotEqual(Guid.Parse(editConcurrencyToken), editedEntry.ConcurrencyToken);
             }
 
             client.DefaultRequestHeaders.Remove("X-Test-Owner");
@@ -1006,6 +1023,7 @@ public sealed class OpportunityEndpointTests
                     new("Input.Category", "Achievement"),
                     new("Input.Title", "Edited referenced result"),
                     new("Input.Context", "Updated evidence requires review."),
+                    new("Input.ConcurrencyToken", GetHiddenValue(evidenceEditHtml, "Input.ConcurrencyToken")),
                     new("__RequestVerificationToken", GetAntiforgeryToken(evidenceEditHtml))
                 ]));
             Assert.Equal(System.Net.HttpStatusCode.Redirect, evidenceEdit.StatusCode);

@@ -5,6 +5,7 @@ public sealed class CareerEntry
     public int Id { get; set; }
     public required string OwnerId { get; set; }
     public int ProfileId { get; set; }
+    public Guid ConcurrencyToken { get; set; } = Guid.NewGuid();
     public string? SyntheticKey { get; set; }
     public required string Category { get; set; }
     public required string Title { get; set; }

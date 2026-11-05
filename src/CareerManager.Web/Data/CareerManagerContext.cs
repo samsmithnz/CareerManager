@@ -39,6 +39,9 @@ public sealed class CareerManagerContext(DbContextOptions<CareerManagerContext> 
         {
             entity.HasKey(entry => entry.Id);
             entity.Property(entry => entry.OwnerId).HasMaxLength(256).IsRequired();
+            entity.Property(entry => entry.ConcurrencyToken)
+                .HasDefaultValueSql("NEWID()")
+                .IsConcurrencyToken();
             entity.Property(entry => entry.Category).HasMaxLength(80).IsRequired();
             entity.Property(entry => entry.Title).HasMaxLength(200).IsRequired();
             entity.Property(entry => entry.Context).HasMaxLength(4000).IsRequired();
