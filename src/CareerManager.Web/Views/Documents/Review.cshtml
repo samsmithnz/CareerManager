@@ -32,7 +32,38 @@
                     }
                     else
                     {
-                        <span>@reference.Title (reference only; not proof of a claim)</span>
+                        <div>
+                            <span>@reference.Title (evidence #@reference.Id; reference only, not proof of a claim)</span>
+                            @if (reference.StartDate.HasValue || reference.EndDate.HasValue)
+                            {
+                                <p>Dates: @reference.StartDate?.ToString("yyyy-MM-dd") – @reference.EndDate?.ToString("yyyy-MM-dd")</p>
+                            }
+                            <p>Context: @reference.Context</p>
+                            @if (reference.Contribution is not null)
+                            {
+                                <p>My contribution: @reference.Contribution</p>
+                            }
+                            @if (reference.Outcome is not null)
+                            {
+                                <p>Outcome: @reference.Outcome</p>
+                            }
+                            @if (reference.Metric is not null)
+                            {
+                                <p>Metric: @reference.Metric</p>
+                            }
+                            @if (reference.Tags is not null)
+                            {
+                                <p>Tags: @reference.Tags</p>
+                            }
+                            @if (reference.SourceNote is not null)
+                            {
+                                <p>Source note: @reference.SourceNote</p>
+                            }
+                            @if (reference.SourceUrl is not null)
+                            {
+                                <p>Source URL: @reference.SourceUrl</p>
+                            }
+                        </div>
                     }
                 </li>
             }

@@ -37,11 +37,20 @@
                         <p class="small text-secondary mb-1">
                             @entry.StartDate?.ToString("MMM yyyy") - @entry.EndDate?.ToString("MMM yyyy")
                         </p>
-                        <p class="small mb-0">@entry.Contribution</p>
+                        <p class="small mb-0">
+                            @if (!string.IsNullOrWhiteSpace(entry.Contribution))
+                            {
+                                @entry.Contribution
+                            }
+                            else
+                            {
+                                @entry.Context
+                            }
+                        </p>
                     </div>
                 }
                 <h3 class="h6">Skills</h3>
-                <ul class="list-inline mb-0" aria-label="Example resume skills">
+                <ul class="list-inline mb-0" aria-label="Persisted skills">
                     @foreach (var skill in Model.Resume.Skills)
                     {
                         <li class="list-inline-item workspace-tag">@skill</li>
@@ -67,10 +76,16 @@
                     <article class="workspace-note mb-3">
                         <h3 class="h6"><a href="#evidence-@entry.Id">@entry.Title</a></h3>
                         <dl class="small mb-0">
-                            <dt>My contribution</dt>
-                            <dd>@entry.Contribution</dd>
-                            <dt>Outcome</dt>
-                            <dd class="mb-0">@entry.Outcome</dd>
+                            @if (!string.IsNullOrWhiteSpace(entry.Contribution))
+                            {
+                                <dt>My contribution</dt>
+                                <dd>@entry.Contribution</dd>
+                            }
+                            @if (!string.IsNullOrWhiteSpace(entry.Outcome))
+                            {
+                                <dt>Outcome</dt>
+                                <dd class="mb-0">@entry.Outcome</dd>
+                            }
                         </dl>
                     </article>
                 }
@@ -94,6 +109,12 @@
                 else
                 {
                     <p class="workspace-note">@Model.DevelopmentPlan.Goal</p>
+                    @if (Model.Plan.RequiresFactualReview || Model.MissingPlanEvidenceCount > 0)
+                    {
+                        <p class="alert alert-warning" role="alert">
+                            Evidence changed or was removed. @Model.MissingPlanEvidenceCount reference(s) are missing; review factual support.
+                        </p>
+                    }
                 }
                 <h3 class="h6">Next actions</h3>
                 <ol class="plan-actions">
@@ -278,7 +299,7 @@
                                         @entry.SourceNote
                                         @if (entry.SourceUrl is not null)
                                         {
-                                            <a href="@entry.SourceUrl" rel="noopener noreferrer">@entry.SourceUrl</a>
+                                            @entry.SourceUrl
                                         }
                                     </dd>
                                 }
@@ -346,6 +367,14 @@
                 Review evidence selection in career plan
             </a>
         }
+        <form asp-controller="CareerPlans" asp-action="@(Model.Plan is null ? "Create" : "Edit")"
+              asp-route-id="@Model.Plan?.Id" method="get" class="mt-2">
+            @foreach (var entry in Model.SelectedEntries)
+            {
+                <input type="hidden" name="selectedEvidenceIds" value="@entry.Id" />
+            }
+            <button class="btn btn-outline-primary" type="submit">Use this evidence in career planning</button>
+        </form>
     </section>
 }
 </div>

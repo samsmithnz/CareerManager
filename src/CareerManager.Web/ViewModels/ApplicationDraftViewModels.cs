@@ -42,7 +42,8 @@ public sealed record ApplicationDraftRowViewModel(
     CareerDocument Document,
     IReadOnlyList<string> EvidenceTitles,
     int MissingEvidenceCount,
-    bool IsApproved);
+    bool IsApproved,
+    bool RequiresFactualReview);
 
 public sealed class ApplicationDraftEditInputModel
 {
@@ -78,4 +79,16 @@ public sealed class ApplicationDraftApprovalInputModel
     public bool UnsupportedClaimsResolved { get; set; }
 }
 
-public sealed record EvidenceReferenceViewModel(int Id, string? Title, bool Missing);
+public sealed record EvidenceReferenceViewModel(
+    int Id,
+    string? Title,
+    bool Missing,
+    string? Context = null,
+    DateOnly? StartDate = null,
+    DateOnly? EndDate = null,
+    string? Contribution = null,
+    string? Outcome = null,
+    string? Metric = null,
+    string? Tags = null,
+    string? SourceNote = null,
+    string? SourceUrl = null);

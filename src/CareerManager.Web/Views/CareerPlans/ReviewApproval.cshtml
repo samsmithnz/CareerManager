@@ -6,6 +6,12 @@
 
 <h1>Review current career plan</h1>
 <p>Approval applies only to the current plan content. Facts come from the selected career records; gaps and recommendations are inferences and suggestions.</p>
+@if (Model.Plan.RequiresFactualReview || Model.MissingEvidenceIds.Count > 0)
+{
+    <p class="alert alert-warning" role="alert">
+        Evidence changed or was removed. Saved plan text is unchanged; review factual support before approving.
+    </p>
+}
 
 <section class="mb-4">
     <h2 class="h5">Owner-entered planning</h2>
@@ -26,11 +32,43 @@
     {
         <p>No evidence is selected.</p>
     }
+    @foreach (var missingId in Model.MissingEvidenceIds)
+    {
+        <p class="text-danger">Evidence #@missingId was removed; review any related factual statements.</p>
+    }
     @foreach (var entry in Model.SelectedEvidence)
     {
         <article class="border rounded p-3 mb-2">
             <h3 class="h6">@entry.Category: @entry.Title</h3>
-            <p class="mb-0">@entry.Context</p>
+            @if (entry.StartDate.HasValue || entry.EndDate.HasValue)
+            {
+                <p>Dates: @entry.StartDate?.ToString("yyyy-MM-dd") – @entry.EndDate?.ToString("yyyy-MM-dd")</p>
+            }
+            <p>Context: @entry.Context</p>
+            @if (entry.Contribution is not null)
+            {
+                <p>My contribution: @entry.Contribution</p>
+            }
+            @if (entry.Outcome is not null)
+            {
+                <p>Outcome: @entry.Outcome</p>
+            }
+            @if (entry.Metric is not null)
+            {
+                <p>Metric: @entry.Metric</p>
+            }
+            @if (entry.Tags is not null)
+            {
+                <p>Tags: @entry.Tags</p>
+            }
+            @if (entry.SourceNote is not null)
+            {
+                <p>Source note: @entry.SourceNote</p>
+            }
+            @if (entry.SourceUrl is not null)
+            {
+                <p>Source URL: @entry.SourceUrl</p>
+            }
         </article>
     }
 </section>

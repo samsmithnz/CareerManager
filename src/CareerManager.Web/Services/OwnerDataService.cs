@@ -44,7 +44,8 @@ public sealed class OwnerDataService(CareerManagerContext context)
                 .Select(document => new CareerDocumentExport(
                     document.Id, document.OwnerId, document.OpportunityId, document.Title, document.Text,
                     document.Type.ToString(), document.ConcurrencyToken, document.ApprovedAtUtc,
-                    document.ApprovedContentHash, document.CreatedAtUtc, document.UpdatedAtUtc)).ToArray(),
+                    document.ApprovedContentHash, document.RequiresFactualReview,
+                    document.CreatedAtUtc, document.UpdatedAtUtc)).ToArray(),
             DocumentEvidence = (await context.CareerDocumentEvidence.AsNoTracking()
                 .Where(reference => reference.OwnerId == ownerId)
                 .OrderBy(reference => reference.CareerDocumentId).ThenBy(reference => reference.CareerEntryId)
@@ -58,7 +59,7 @@ public sealed class OwnerDataService(CareerManagerContext context)
                     plan.Id, plan.OwnerId, plan.TargetRoles, plan.Strengths, plan.Interests,
                     plan.EvidenceGaps, plan.Recommendations, plan.NextActions, plan.Progress,
                     plan.ConcurrencyToken, plan.ApprovedAtUtc, plan.ApprovedContentHash,
-                    plan.CreatedAtUtc, plan.UpdatedAtUtc)).ToArray(),
+                    plan.RequiresFactualReview, plan.CreatedAtUtc, plan.UpdatedAtUtc)).ToArray(),
             PlanEvidence = (await context.CareerPlanEvidence.AsNoTracking()
                 .Where(reference => reference.OwnerId == ownerId)
                 .OrderBy(reference => reference.CareerPlanId).ThenBy(reference => reference.CareerEntryId)

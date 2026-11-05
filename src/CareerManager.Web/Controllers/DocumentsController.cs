@@ -62,7 +62,8 @@ public sealed class DocumentsController(
                     document,
                     ids.Where(existingEvidence.ContainsKey).Select(id => existingEvidence[id].Title).ToArray(),
                     ids.Count(id => !existingEvidence.ContainsKey(id)),
-                    IsApproved(document));
+                    IsApproved(document),
+                    document.RequiresFactualReview);
             }).ToArray()
         });
     }
@@ -323,7 +324,9 @@ public sealed class DocumentsController(
             CanExport = IsExportable(document.Type),
             EvidenceReferences = ids
                 .Select(id => existingEvidence.TryGetValue(id, out var entry)
-                    ? new EvidenceReferenceViewModel(id, entry.Title, false)
+                    ? new EvidenceReferenceViewModel(
+                        id, entry.Title, false, entry.Context, entry.StartDate, entry.EndDate,
+                        entry.Contribution, entry.Outcome, entry.Metric, entry.Tags, entry.SourceNote, entry.SourceUrl)
                     : new EvidenceReferenceViewModel(id, null, true))
                 .ToArray()
         };

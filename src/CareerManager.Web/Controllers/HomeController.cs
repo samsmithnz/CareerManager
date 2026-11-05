@@ -45,6 +45,13 @@ public class HomeController(CareerManagerContext context) : Controller
         var plan = await context.CareerPlans
             .AsNoTracking()
             .SingleOrDefaultAsync(item => item.OwnerId == ownerId, cancellationToken);
+        var existingEntryIds = entries.Select(entry => entry.Id).ToHashSet();
+        var missingPlanEvidenceCount = plan is null
+            ? 0
+            : await context.CareerPlanEvidence
+                .AsNoTracking()
+                .Where(reference => reference.OwnerId == ownerId && reference.CareerPlanId == plan.Id)
+                .CountAsync(reference => !existingEntryIds.Contains(reference.CareerEntryId), cancellationToken);
         var opportunities = await context.CareerOpportunities
             .AsNoTracking()
             .Where(opportunity => opportunity.OwnerId == ownerId)
@@ -60,6 +67,7 @@ public class HomeController(CareerManagerContext context) : Controller
         return View(EvidenceWorkspacePrototype.CreatePersisted(
             entries,
             plan,
+            missingPlanEvidenceCount,
             opportunities,
             normalizedSearch,
             category?.Trim(),

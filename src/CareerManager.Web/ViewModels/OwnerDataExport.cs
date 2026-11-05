@@ -2,7 +2,7 @@ namespace CareerManager.ViewModels;
 
 public sealed class OwnerDataExport
 {
-    public int SchemaVersion { get; init; } = 1;
+    public int SchemaVersion { get; init; } = 2;
     public DateTime ExportedAtUtc { get; init; }
     public required string OwnerId { get; init; }
     public required IReadOnlyList<CareerProfileExport> Profiles { get; init; }
@@ -60,6 +60,7 @@ public sealed record CareerDocumentExport(
     Guid ConcurrencyToken,
     DateTime? ApprovedAtUtc,
     string? ApprovedContentHash,
+    bool RequiresFactualReview,
     DateTime CreatedAtUtc,
     DateTime UpdatedAtUtc);
 
@@ -78,6 +79,7 @@ public sealed record CareerPlanExport(
     Guid ConcurrencyToken,
     DateTime? ApprovedAtUtc,
     string? ApprovedContentHash,
+    bool RequiresFactualReview,
     DateTime CreatedAtUtc,
     DateTime UpdatedAtUtc);
 

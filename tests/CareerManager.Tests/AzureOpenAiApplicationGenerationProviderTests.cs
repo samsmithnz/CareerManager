@@ -40,7 +40,17 @@ public sealed class AzureOpenAiApplicationGenerationProviderTests
             "Analyst",
             "Build reports.",
             "Company context",
-            [new GenerationEvidence(4, "Skill", "SQL", "Used SQL for reporting.")]);
+            [new GenerationEvidence(
+                4,
+                "Skill",
+                "SQL",
+                "Used SQL for reporting.",
+                new DateOnly(2024, 1, 1),
+                Contribution: "Owner contribution.",
+                Outcome: "Owner outcome.",
+                Tags: "reporting, SQL",
+                SourceNote: "Owner source note.",
+                SourceUrl: "https://source.example/report")]);
 
         var result = await provider.GenerateAsync(request, default);
 
@@ -49,7 +59,18 @@ public sealed class AzureOpenAiApplicationGenerationProviderTests
         Assert.Equal("East US 2 (Virginia)", provider.Region);
         Assert.Equal("synthetic-test-key", submittedKey);
         Assert.Contains("Used SQL for reporting.", submittedBody, StringComparison.Ordinal);
+        Assert.Contains("Owner contribution.", submittedBody, StringComparison.Ordinal);
+        Assert.Contains("Owner outcome.", submittedBody, StringComparison.Ordinal);
+        Assert.Contains("Owner source note.", submittedBody, StringComparison.Ordinal);
+        Assert.Contains("https://source.example/report", submittedBody, StringComparison.Ordinal);
         Assert.DoesNotContain("private notes", submittedBody, StringComparison.Ordinal);
+        using var requestBody = JsonDocument.Parse(submittedBody!);
+        var serializedRequest = requestBody.RootElement.GetProperty("messages")[1]
+            .GetProperty("content").GetString();
+        using var payload = JsonDocument.Parse(serializedRequest!);
+        var serializedEvidence = payload.RootElement.GetProperty("evidence")[0];
+        Assert.False(serializedEvidence.TryGetProperty("endDate", out _));
+        Assert.False(serializedEvidence.TryGetProperty("metric", out _));
         Assert.Equal(4, Assert.Single(Assert.Single(result.ResumeClaims).EvidenceIds));
     }
 

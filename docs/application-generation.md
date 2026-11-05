@@ -6,13 +6,13 @@ The optional remote provider target is Azure OpenAI with a regional `gpt-4o-mini
 
 ## Region and data handling
 
-Generation runs in the same application process and deployment region as CareerManager. The provider has no separate region, account, retention policy, or training use because no third-party model receives the request. Existing application/database hosting and its configured region remain responsible for storage and access. The consent checkbox is still required for every generation request, and the page previews the exact role and selected evidence being processed. No career content is written to application logs.
+Generation runs in the same application process and deployment region as CareerManager. The provider has no separate region, account, retention policy, or training use because no third-party model receives the request. Existing application/database hosting and its configured region remain responsible for storage and access. The consent checkbox is still required for every generation request, and the page previews the exact role and every populated field from the selected evidence (context, dates, contribution, outcome, optional metric, tags, and source notes/URLs) being processed. Unselected evidence is never included. No career content is written to application logs.
 
 The remote service is only enabled when an administrator configures the Azure endpoint, deployment, `Region=eastus2`, API key, and `ApplicationGeneration:AzureOpenAI:DataHandlingApproved=true`. Before setting that flag, the owner must review the currently applicable Microsoft contractual data-processing terms, retention/abuse-monitoring behavior, training use, subprocessors, and regional processing guarantees, and confirm the selected deployment is available in East US 2. Remote mode makes no claim that these terms have already been approved. The consent preview names the configured provider, deployment, and region and displays the exact role/evidence content being sent. Keep the key in an approved secret store or environment configuration; never put it in source control or logs.
 
 ## Request and spending limits
 
-- At most 10 selected evidence entries and 20,000 combined input characters per request.
+- At most 10 selected evidence entries and 20,000 combined input characters per request, including every populated evidence field. Oversized requests are rejected before processing; selected fields are not silently omitted.
 - At most 3 generation attempts per owner per minute per application instance.
 - At most 10 attempts per owner per UTC day per application instance.
 - Provider execution is cancelled after 15 seconds.

@@ -24,7 +24,7 @@ public sealed class CareerPlanTests
 
         var controller = CreateController(context, "owner-a");
         var otherOwnersPlan = await context.CareerPlans.SingleAsync();
-        var directRequest = await controller.Edit(otherOwnersPlan.Id, default);
+        var directRequest = await controller.Edit(otherOwnersPlan.Id, (int[]?)null, default);
         var forgedReference = await controller.Create(new CareerPlanInputModel
         {
             TargetRoles = "Reporting dashboards",
@@ -231,7 +231,7 @@ public sealed class CareerPlanTests
         var (_, plan, _) = await SeedPlan(context);
         var controller = CreateController(context, null);
 
-        Assert.IsType<ForbidResult>(await controller.Edit(plan.Id, default));
+        Assert.IsType<ForbidResult>(await controller.Edit(plan.Id, (int[]?)null, default));
         Assert.IsType<ForbidResult>(await controller.Index(default));
     }
 
@@ -260,13 +260,14 @@ public sealed class CareerPlanTests
             NextActions = "Existing action",
             Progress = "Progress note"
         };
+        context.AddRange(owner, profile, evidence, plan);
+        await context.SaveChangesAsync();
         plan.EvidenceReferences.Add(new CareerPlanEvidence
         {
             OwnerId = ownerId,
             CareerEntryId = evidence.Id,
             Plan = plan
         });
-        context.AddRange(owner, profile, evidence, plan);
         await context.SaveChangesAsync();
         return (owner, plan, evidence);
     }

@@ -9,6 +9,10 @@
 
 <section class="mb-4">
     <h2 class="h5">Factual evidence processed</h2>
+    @if (Model.MissingEvidenceIds.Count > 0)
+    {
+        <p class="alert alert-warning" role="alert">Missing references (@string.Join(", ", Model.MissingEvidenceIds)) were not processed.</p>
+    }
     @foreach (var entry in Model.SelectedEvidence)
     {
         <article class="border rounded p-3 mb-2">

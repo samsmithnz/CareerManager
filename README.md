@@ -2,20 +2,20 @@
 
 CareerManager is a private, career-focused workspace for understanding your experience, strengths, interests, and direction. It helps you build a reusable record of your career, explore where you want to go next, and manage opportunities. Role-specific resumes and cover letters are outputs of that broader career work—not the center of the product.
 
-**Status:** The .NET 10 MVC and Azure SQL foundation (1.1), career evidence (1.3), opportunities (1.4), consent-gated comparisons and drafts (1.5), document review/export (1.6), career planning (1.7), and full-data export/deletion (1.8) are implemented. Repeatable Azure infrastructure and a protected OIDC deployment workflow are prepared in 1.9, but have not been provisioned or verified in a live environment. Microsoft sign-in and stable owner mapping (1.2) remain a prerequisite; private data routes fail closed until that work is complete. The public workspace prototype uses only synthetic content.
+**Status:** The .NET 10 MVC and Azure SQL foundation (1.1), private Microsoft sign-in and owner mapping (1.2), persistent career evidence (1.3/1.10), opportunities (1.4), consent-gated comparisons and drafts (1.5), document review/export (1.6), career planning (1.7), and full-data export/deletion (1.8) are implemented. Repeatable Azure infrastructure and a protected OIDC deployment workflow are prepared in 1.9, but have not been provisioned or verified in a live environment. Private data routes fail closed unless the authenticated owner is registered.
 
-### Career workspace prototype
+### Career workspace
 
 Visit `/Home/Workspace` to preview four connected areas:
 
-- **Resume preview:** one possible role-specific output from your broader career evidence.
-- **Career brag doc:** concrete accomplishments with personal contributions and outcomes; supporting records retain context, optional metrics, tags, and source notes/URLs.
-- **Career development plan:** goals, next actions, milestones, and review points. Plans are intentions, not completed achievements.
-- **Interests & career fit:** reflections on what you are good at, what you like doing, and what makes money, using the three-circle model below. Paid-role examples are ideas to investigate, not verified market demand.
+- **Resume evidence:** persisted work experience and skills that can be explicitly selected for a role-specific comparison and draft.
+- **Career brag doc:** persisted accomplishments with personal contributions and outcomes; records retain context, relevant dates, optional metrics, tags, and source notes/URLs.
+- **Career development plan:** persisted goals, next actions, and progress. Plans are intentions, not completed achievements.
+- **Interests & career fit:** persisted strengths and interests alongside clearly illustrative prompts about what makes money; suggestions are not verified market demand.
 
-The expandable supporting-evidence browser retains search, category filters, and explicit selection for the synthetic prototype. For example: `/Home/Workspace?search=project&category=Work%20experience&selectedIds=1`. Prototype selections are carried only in the page URL and remain separate from private data. Owner-scoped role comparison and evidence-based draft generation are available from an opportunity; the prototype itself does not read or save career data.
+The expandable supporting-evidence browser searches and filters owner-scoped SQL records and lets you select the same persisted records for role comparison, document generation, or career planning. Add, edit, and delete records in the application; there is no need to edit database rows. The example image below is illustrative only and does not represent saved owner data.
 
-![Synthetic career workspace with resume, brag doc, development plan, and three-circle career fit.](docs/images/career-evidence-workspace.png)
+![Illustrative career workspace layout with resume evidence, brag doc, development plan, and three-circle career fit.](docs/images/career-evidence-workspace.png)
 
 ## Why this exists
 
@@ -118,6 +118,7 @@ The linked issues are the source of truth for implementation details and accepta
 | [#7 — 1.1 Foundation](https://github.com/samsmithnz/CareerManager/issues/7) | .NET 10 MVC, Azure SQL, migrations, and CI | Closed |
 | [#8 — 1.2 Authentication](https://github.com/samsmithnz/CareerManager/issues/8) | Private Microsoft sign-in and owner enforcement | Open; blocks live deployment |
 | [#9 — 1.3 Career evidence](https://github.com/samsmithnz/CareerManager/issues/9) | Career evidence workspace and owner-scoped CRUD | Closed |
+| [#31 — 1.10 Persistent career evidence](https://github.com/samsmithnz/CareerManager/issues/31) | Persistent evidence CRUD, detailed factual fields, and private workspace integration | Implemented |
 | [#10 — 1.4 Opportunities](https://github.com/samsmithnz/CareerManager/issues/10) | Opportunity management and application progress | Closed |
 | [#11 — 1.5 Comparisons and drafts](https://github.com/samsmithnz/CareerManager/issues/11) | Evidence-based comparisons and draft generation | Closed |
 | [#12 — 1.6 Review and export](https://github.com/samsmithnz/CareerManager/issues/12) | Current-document editing, approval, PDF/DOCX export | Implemented |
@@ -169,7 +170,7 @@ The MVP is private and single-owner. Supporting multiple users would require an 
 - Use a different, isolated Azure SQL database named `CareerManager-Test` or `CareerManager-Testing` for database-dependent tests. The test command accepts its connection string only through `CAREERMANAGER_TEST_SQL_CONNECTION`; the integration workflow reads the repository secret `AZURE_SQL_TEST_CONNECTION_STRING`.
 - Production configuration is separate: Bicep configures `ASPNETCORE_ENVIRONMENT=Production` and a managed-identity Azure SQL connection string. Do not reuse development or test databases. Provisioning, the SQL runtime role, migration/release procedure, and OIDC setup are documented in [deployment instructions](docs/deployment.md).
 - For development/test cost, use the Azure SQL Database free offer when eligible; otherwise choose the lowest currently supported General Purpose serverless compute with auto-pause and the smallest suitable storage. Confirm subscription, region, offer limits, and current pricing in the [Azure SQL free offer](https://learn.microsoft.com/azure/azure-sql/database/free-offer?view=azuresql) and [serverless tier documentation](https://learn.microsoft.com/azure/azure-sql/database/serverless-tier-overview?view=azuresql) before provisioning. No Azure resources or credentials are included here.
-- The application fails clearly at startup when `ConnectionStrings:CareerManager` is missing. It does not automatically apply migrations or seed data.
+- The application fails clearly at startup when `ConnectionStrings:CareerManager` is missing. It does not automatically apply migrations or seed data. Apply the `PersistCareerEvidence` migration to the authorized Azure SQL database before using the detailed evidence fields.
 
 ### Restore, build, and run
 
@@ -187,7 +188,7 @@ The unit tests do not require Azure credentials or a live database. `dotnet run`
 
 ### Migrations and synthetic development data
 
-Set `ASPNETCORE_ENVIRONMENT=Development` when running EF commands so the design-time factory can read Development User Secrets. Apply the initial migration only to the authorized development database:
+Set `ASPNETCORE_ENVIRONMENT=Development` when running EF commands so the design-time factory can read Development User Secrets. Apply reviewed migrations, including `PersistCareerEvidence`, only to the authorized development database:
 
 ```sh
 dotnet ef database update --project src/CareerManager.Web/CareerManager.Web.csproj --startup-project src/CareerManager.Web/CareerManager.Web.csproj
@@ -200,6 +201,7 @@ CAREERMANAGER_ENABLE_SYNTHETIC_SEED=true dotnet run --project src/CareerManager.
 ```
 
 Use `dotnet ef migrations add <MigrationName> --project src/CareerManager.Web/CareerManager.Web.csproj --startup-project src/CareerManager.Web/CareerManager.Web.csproj` to add future migrations.
+See the [data model](docs/data-model.md) for owner-scoped evidence fields and reference behavior, and the [data lifecycle guide](docs/data-lifecycle.md) for export schema version 2 and deletion coverage.
 
 ### Azure SQL integration tests and CI
 
@@ -214,7 +216,7 @@ Source `CAREERMANAGER_TEST_SQL_CONNECTION` from an approved local secret facilit
 
 The standard GitHub Actions CI restores, builds, audits dependencies, and runs only database-free unit tests; it needs no Azure credentials. To run SQL tests in GitHub Actions, configure the `AZURE_SQL_TEST_CONNECTION_STRING` repository secret for the isolated test database and dispatch the **Azure SQL integration tests** workflow. The workflow fails explicitly when that secret is absent. NuGet audit warnings fail the build, pull requests also run dependency review, and Dependabot checks NuGet and GitHub Actions updates.
 
-No local database, SQLite substitute, or database container is used. The public landing/privacy pages and synthetic career-workspace prototype do not expose private career data. Career and opportunity endpoints fail closed until the identity integration maps an authenticated configured owner to `career_owner_id` and that owner exists in the database. Do not configure production access until issue 1.2's Microsoft identity setup and owner mapping are complete.
+No local database, SQLite substitute, or database container is used. The public landing/privacy pages do not expose private career data. The main career workspace requires an authenticated, registered owner and reads only that owner's SQL records. Reflections and the career-fit market prompt are illustrative and are never treated as saved evidence.
 
 Before Azure deployment, the owner will need to provision or authorize an Azure subscription/resource group, an identity application, the selected AI service if used, and GitHub Actions deployment access. Use managed identity or federated credentials where supported rather than long-lived deployment secrets.
 

@@ -12,6 +12,45 @@ namespace CareerManager.Tests;
 public sealed class OwnerDataServiceTests
 {
     [Fact]
+    public async Task ExportIncludesEveryPersistedEvidenceFieldAndReviewState()
+    {
+        await using var context = CreateContext();
+        await SeedOwnerDataAsync(context);
+        var entry = await context.CareerEntries.SingleAsync();
+        entry.StartDate = new DateOnly(2020, 1, 2);
+        entry.EndDate = new DateOnly(2021, 3, 4);
+        entry.Contribution = "Owner-entered contribution.";
+        entry.Outcome = "Owner-entered outcome.";
+        entry.Metric = "Optional metric.";
+        entry.Tags = "one, two";
+        entry.SourceNote = "Owner source note.";
+        entry.SourceUrl = "https://source.example/item";
+        await context.SaveChangesAsync();
+        var document = await context.CareerDocuments.SingleAsync();
+        document.RequiresFactualReview = true;
+        var plan = await context.CareerPlans.SingleAsync();
+        plan.RequiresFactualReview = true;
+        await context.SaveChangesAsync();
+
+        var export = await new OwnerDataService(context).ExportAsync("owner-a", default);
+
+        Assert.NotNull(export);
+        Assert.Equal(2, export.SchemaVersion);
+        var exportedEntry = Assert.Single(export.Entries);
+        Assert.Equal(entry.Context, exportedEntry.Context);
+        Assert.Equal(entry.StartDate, exportedEntry.StartDate);
+        Assert.Equal(entry.EndDate, exportedEntry.EndDate);
+        Assert.Equal(entry.Contribution, exportedEntry.Contribution);
+        Assert.Equal(entry.Outcome, exportedEntry.Outcome);
+        Assert.Equal(entry.Metric, exportedEntry.Metric);
+        Assert.Equal(entry.Tags, exportedEntry.Tags);
+        Assert.Equal(entry.SourceNote, exportedEntry.SourceNote);
+        Assert.Equal(entry.SourceUrl, exportedEntry.SourceUrl);
+        Assert.True(Assert.Single(export.Documents).RequiresFactualReview);
+        Assert.True(Assert.Single(export.Plans).RequiresFactualReview);
+    }
+
+    [Fact]
     public async Task DeleteIsIdempotentAndRetainsOwnerAndOnlyMinimalAuditFields()
     {
         await using var context = CreateContext();

@@ -33,6 +33,12 @@ else
 
 <section class="mb-4">
     <h2 class="h5">Selected factual evidence</h2>
+    @if (Model.MissingEvidenceIds.Count > 0)
+    {
+        <p class="alert alert-warning" role="alert">
+            Missing evidence references (@string.Join(", ", Model.MissingEvidenceIds)) are not sent for generation. Review or remove them in the plan.
+        </p>
+    }
     @if (Model.SelectedEvidence.Count == 0)
     {
         <p>No evidence will be processed. Any resulting gaps are suggestions, not factual claims.</p>
@@ -69,7 +75,7 @@ else
                 }
                 @if (entry.SourceUrl is not null)
                 {
-                    <dt>Source URL</dt><dd><a href="@entry.SourceUrl" rel="noopener noreferrer">@entry.SourceUrl</a></dd>
+                    <dt>Source URL</dt><dd>@entry.SourceUrl</dd>
                 }
             </dl>
         </article>

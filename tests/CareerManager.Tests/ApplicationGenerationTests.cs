@@ -18,6 +18,64 @@ namespace CareerManager.Tests;
 public sealed class ApplicationGenerationTests
 {
     [Fact]
+    public async Task GenerationProviderReceivesEverySelectedEvidenceField()
+    {
+        var selected = new GenerationEvidence(
+            1,
+            "Achievement",
+            "Saved result",
+            "Owner-entered context.",
+            new DateOnly(2024, 1, 1),
+            new DateOnly(2024, 12, 31),
+            "Owner contribution.",
+            "Owner outcome.",
+            "Optional metric.",
+            "tag-one, tag-two",
+            "Owner source note.",
+            "https://source.example/item");
+        GenerationEvidence? received = null;
+        var provider = new StubProvider((request, _) =>
+        {
+            received = Assert.Single(request.Evidence);
+            return Task.FromResult(new ApplicationGenerationResult([], [], [], [], []));
+        });
+
+        await new ApplicationGenerationService(provider).GenerateAsync(
+            new ApplicationGenerationRequest("Company", "Role", "", "", [selected]),
+            default);
+
+        Assert.Equal(selected, received);
+    }
+
+    [Fact]
+    public async Task ExpandedEvidenceFieldsCountTowardGenerationInputLimit()
+    {
+        var providerCalled = false;
+        var provider = new StubProvider((_, _) =>
+        {
+            providerCalled = true;
+            return Task.FromResult(new ApplicationGenerationResult([], [], [], [], []));
+        });
+        var request = new ApplicationGenerationRequest(
+            "Company",
+            "Role",
+            "",
+            "",
+            [new GenerationEvidence(
+                1,
+                "Achievement",
+                "Result",
+                "Context",
+                Contribution: new string('x', ApplicationGenerationService.MaximumInputCharacters))]);
+
+        var exception = await Assert.ThrowsAsync<ApplicationGenerationException>(
+            () => new ApplicationGenerationService(provider).GenerateAsync(request, default));
+
+        Assert.Contains("safe input limit", exception.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.False(providerCalled);
+    }
+
+    [Fact]
     public async Task DeterministicProviderReportsMatchesGapsAndMissingMetricsWithEvidenceReferences()
     {
         var request = new ApplicationGenerationRequest(
@@ -34,6 +92,27 @@ public sealed class ApplicationGenerationTests
         Assert.Contains(result.Gaps, gap => gap.Requirement.Contains("nursing license", StringComparison.Ordinal));
         Assert.Contains(result.Questions, question => question.Contains("verified date, number, or result", StringComparison.Ordinal));
         Assert.Equal(12, Assert.Single(Assert.Single(result.ResumeClaims).EvidenceIds));
+    }
+
+    [Fact]
+    public async Task DeterministicProviderUsesSelectedContributionAndOutcomeFieldsForMatching()
+    {
+        var request = new ApplicationGenerationRequest(
+            "Example",
+            "Migration analyst",
+            "Coordinated data migration across departments.",
+            "",
+            [new GenerationEvidence(
+                6,
+                "Work experience",
+                "Project coordinator",
+                "Supported the delivery team.",
+                Contribution: "Coordinated data migration.",
+                Outcome: "Departments completed the move.")]);
+
+        var result = await new DeterministicApplicationGenerationProvider().GenerateAsync(request, default);
+
+        Assert.Equal(6, Assert.Single(Assert.Single(result.Matches).EvidenceIds));
     }
 
     [Fact]
